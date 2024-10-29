@@ -11,4 +11,4 @@ COPY requirements.txt /app
 RUN python -m pip install -r requirements.txt 
 
 COPY . .
-ENTRYPOINT ["python", "-m", "airbus-sar-adaptor"]
+ENTRYPOINT ["python", "-m", "airbus_sar_adaptor"]

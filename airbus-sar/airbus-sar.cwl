@@ -37,8 +37,8 @@ $graph:
     id: airbus-sar-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/n1b3o1k2/airbus-sar-adaptor:0.0.1
-    baseCommand: ["python", "-m", "airbus-sar-adaptor"]
+        dockerPull: public.ecr.aws/n1b3o1k2/airbus-sar-adaptor:0.0.1-rc6
+    baseCommand: ["python", "-m", "airbus_sar_adaptor"]
     inputs:
       stac_key:
         type: string
