@@ -1,5 +1,5 @@
 ## Before attempting to run please provide your API Token in the following variable. You can generate this from the Hub website: https://test.eodatahub.org.uk/workspaces/
-@apiToken=454f4448b569d90f7a05169ee0d3382a
+@apiToken=<api-token>
 
 @scheme = https
 @ades=dev.eodatahub.org.uk/ades
