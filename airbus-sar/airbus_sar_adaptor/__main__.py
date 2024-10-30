@@ -22,7 +22,7 @@ def send_pulsar_message(bucket: str, key: str):
     """Send a Pulsar message to indicate an update to the item"""
     pulsar_client = PulsarClient("pulsar://pulsar-broker.pulsar:6650")
     producer = pulsar_client.create_producer(
-        topic="harvested", producer_name="resource_catalogue_fastapi"
+        topic="harvested", producer_name="resource_catalogue_fastapi",  chunking_enabled=True
     )
     parts = key.split("/")
     workspace = parts[0]
