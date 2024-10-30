@@ -1,4 +1,5 @@
 import base64
+import logging
 
 import requests
 from kubernetes import client, config
@@ -59,13 +60,13 @@ def post_submit_order(acquisition_id: str, env: str = "dev") -> str:
 
     body = {"acquisitions": [acquisition_id]}
 
-    print(f"Sending POST request to submit an order with {body}")
+    logging.info(f"Sending POST request to submit an order with {body}")
 
     response = requests.post(f"{url}/v1/sar/orders/submit", json=body, headers=headers)
     response.raise_for_status()
 
     body = response.json()
-    print(f"Order submitted: {body}")
+    logging.info(f"Order submitted: {body}")
     for feature in body["features"]:
         if feature["properties"]["acquisitionId"] == acquisition_id:
             return feature["properties"]["itemId"]
@@ -88,13 +89,13 @@ def post_cancel_order(item_id: str, env: str = "dev"):
 
     body = {"items": [item_id]}
 
-    print(f"Sending POST request to cancel an order with {body}")
+    logging.info(f"Sending POST request to cancel an order with {body}")
 
     response = requests.post(f"{url}/v1/sar/orders/cancel", json=body, headers=headers)
     response.raise_for_status()
 
     body = response.json()
-    print(f"Order canceled: {body}")
+    logging.info(f"Order canceled: {body}")
 
 
 def post_items_status(env: str = "dev") -> dict:
@@ -112,7 +113,7 @@ def post_items_status(env: str = "dev") -> dict:
 
     body = {"limit": 200}
 
-    print(f"Sending POST request to query status of all orders with {body}")
+    logging.info(f"Sending POST request to query status of all orders with {body}")
 
     response = requests.post(
         f"{url}/v1/sar/orders/*/items/status", json=body, headers=headers
@@ -120,5 +121,5 @@ def post_items_status(env: str = "dev") -> dict:
     response.raise_for_status()
 
     body = response.json()
-    print(f"Order submitted: {body}")
+    logging.info(f"Order submitted: {body}")
     return body

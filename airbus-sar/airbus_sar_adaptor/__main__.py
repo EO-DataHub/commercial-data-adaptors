@@ -1,4 +1,5 @@
 import json
+import logging
 import mimetypes
 import sys
 from enum import Enum
@@ -6,13 +7,24 @@ from enum import Enum
 from pulsar import Client as PulsarClient
 
 from airbus_sar_adaptor.api_utils import post_submit_order
-from airbus_sar_adaptor.s3_utils import (list_objects_in_folder,
-                                         move_data_to_workspace,
-                                         poll_s3_for_data, retrieve_stac_item,
-                                         upload_stac_item)
-from airbus_sar_adaptor.stac_utils import (get_acquisition_id_from_stac,
-                                           update_stac_order_status,
-                                           write_stac_item_and_catalog)
+from airbus_sar_adaptor.s3_utils import (
+    list_objects_in_folder,
+    move_data_to_workspace,
+    poll_s3_for_data,
+    retrieve_stac_item,
+    upload_stac_item,
+)
+from airbus_sar_adaptor.stac_utils import (
+    get_acquisition_id_from_stac,
+    update_stac_order_status,
+    write_stac_item_and_catalog,
+)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 class OrderStatus(Enum):
@@ -46,7 +58,7 @@ def send_pulsar_message(bucket: str, key: str):
         "source": workspace,
         "target": f"user-datasets/{workspace}",
     }
-    print(f"Sending message to pulsar: {output_data}")
+    logging.info(f"Sending message to pulsar: {output_data}")
     producer.send((json.dumps(output_data)).encode("utf-8"))
 
 
@@ -110,7 +122,7 @@ def main(stac_key: str, workspace_bucket: str):
         acquisition_id = get_acquisition_id_from_stac(stac_item, stac_key)
         item_id = post_submit_order(acquisition_id)
     except Exception as e:
-        print(f"Failed to submit order: {e}")
+        logging.error(f"Failed to submit order: {e}")
         update_stac_item_failure(workspace_bucket, stac_key, None)
         return
     try:
@@ -120,7 +132,7 @@ def main(stac_key: str, workspace_bucket: str):
             "commercial-data-airbus", workspace_bucket, stac_parent_folder, response
         )
     except Exception as e:
-        print(f"Failed to retrieve data: {e}")
+        logging.error(f"Failed to retrieve data: {e}")
         update_stac_item_failure(workspace_bucket, stac_key, item_id)
         return
     update_stac_item_success(workspace_bucket, stac_key, stac_parent_folder, item_id)

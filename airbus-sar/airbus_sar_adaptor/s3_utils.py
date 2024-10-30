@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 
 import boto3
@@ -21,11 +22,11 @@ def poll_s3_for_data(
 
     while True:
         # Check if the folder exists in the source bucket
-        print(f"Checking for folder '{item_id}' in bucket '{source_bucket}'...")
+        logging.info(f"Checking for folder '{item_id}' in bucket '{source_bucket}'...")
         response = s3.list_objects_v2(Bucket=source_bucket, Prefix=f"{item_id}/")
 
         if "Contents" in response:
-            print(f"Folder '{item_id}' found in bucket '{source_bucket}'.")
+            logging.info(f"Folder '{item_id}' found in bucket '{source_bucket}'.")
             return response
 
         # Check for timeout
@@ -51,7 +52,7 @@ def move_data_to_workspace(
         )
 
         s3.delete_object(Bucket=source_bucket, Key=obj["Key"])
-        print(
+        logging.info(
             f"Moved object '{obj['Key']}' to '{destination_key}' in bucket '{destination_bucket}'."
         )
 
@@ -72,4 +73,4 @@ def list_objects_in_folder(bucket: str, folder_prefix: str) -> dict:
 def upload_stac_item(bucket: str, key: str, stac_item: dict):
     """Upload a STAC item to an S3 bucket"""
     s3.put_object(Bucket=bucket, Key=key, Body=json.dumps(stac_item))
-    print(f"Uploaded STAC item {key} to bucket {bucket}")
+    logging.info(f"Uploaded STAC item {key} to bucket {bucket}")

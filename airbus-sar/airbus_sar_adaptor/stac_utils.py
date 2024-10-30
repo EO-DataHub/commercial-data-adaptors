@@ -1,4 +1,5 @@
 import json
+import logging
 
 
 def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, item_id: str):
@@ -6,7 +7,7 @@ def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, item_i
     # Write the STAC item to a file
     with open(stac_item_filename, "w") as f:
         json.dump(stac_item, f, indent=2)
-    print(f"Created STAC item '{stac_item_filename}' locally.")
+    logging.info(f"Created STAC item '{stac_item_filename}' locally.")
 
     # If not item_id, the order has failed
     if not item_id:
@@ -27,7 +28,7 @@ def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, item_i
     # Write the STAC catalog to a file
     with open("catalog.json", "w") as f:
         json.dump(stac_catalog, f, indent=2)
-    print("Created STAC catalog catalog.json locally.")
+    logging.info("Created STAC catalog catalog.json locally.")
 
 
 def update_stac_order_status(stac_item: dict, item_id: str, order_status: str):
