@@ -1,22 +1,18 @@
 import json
 import mimetypes
 import sys
+from enum import Enum
+
+from pulsar import Client as PulsarClient
 
 from airbus_sar_adaptor.api_utils import post_submit_order
-from airbus_sar_adaptor.s3_utils import (
-    list_objects_in_folder,
-    move_data_to_workspace,
-    poll_s3_for_data,
-    retrieve_stac_item,
-    upload_stac_item,
-)
-from airbus_sar_adaptor.stac_utils import (
-    get_acquisition_id_from_stac,
-    update_stac_order_status,
-    write_stac_item_and_catalog,
-)
-from enum import Enum
-from pulsar import Client as PulsarClient
+from airbus_sar_adaptor.s3_utils import (list_objects_in_folder,
+                                         move_data_to_workspace,
+                                         poll_s3_for_data, retrieve_stac_item,
+                                         upload_stac_item)
+from airbus_sar_adaptor.stac_utils import (get_acquisition_id_from_stac,
+                                           update_stac_order_status,
+                                           write_stac_item_and_catalog)
 
 
 class OrderStatus(Enum):

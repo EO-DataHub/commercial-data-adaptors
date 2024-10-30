@@ -6,10 +6,19 @@ import boto3
 s3 = boto3.client("s3")
 
 
+class PollingTimeoutError(Exception):
+    """Custom exception for polling timeout"""
+
+    pass
+
+
 def poll_s3_for_data(
-    source_bucket: str, item_id: str, polling_interval: int = 60
+    source_bucket: str, item_id: str, polling_interval: int = 60, timeout: int = 86400
 ) -> dict:
     """Poll the airbus S3 bucket for item_id and download the data"""
+    start_time = time.time()
+    end_time = start_time + timeout
+
     while True:
         # Check if the folder exists in the source bucket
         print(f"Checking for folder '{item_id}' in bucket '{source_bucket}'...")
@@ -18,6 +27,12 @@ def poll_s3_for_data(
         if "Contents" in response:
             print(f"Folder '{item_id}' found in bucket '{source_bucket}'.")
             return response
+
+        # Check for timeout
+        if time.time() > end_time:
+            raise PollingTimeoutError(
+                f"Timeout reached while polling for {item_id} in bucket {source_bucket} after {timeout} seconds."
+            )
 
         # Wait for the specified interval before checking again
         time.sleep(polling_interval)
