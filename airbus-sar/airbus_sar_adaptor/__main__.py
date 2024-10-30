@@ -19,7 +19,6 @@ from airbus_sar_adaptor.stac_utils import (
 )
 from pulsar import Client as PulsarClient
 
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(message)s",
