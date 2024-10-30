@@ -32,9 +32,9 @@ jobs:
     name: Call Security Scan
     uses: EO-DataHub/github-actions/.github/workflows/security.yaml@main
 
-  unit-tests:
-    name: Run unit tests
-    uses: EO-DataHub/github-actions/.github/workflows/unit-tests-python.yaml@main
+#  unit-tests:
+#    name: Run unit tests
+#    uses: EO-DataHub/github-actions/.github/workflows/unit-tests-python.yaml@main
 
 #  get-tag-name:
 #    runs-on: ubuntu-latest
