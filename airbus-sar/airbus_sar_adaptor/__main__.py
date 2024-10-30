@@ -17,6 +17,7 @@ from airbus_sar_adaptor.stac_utils import (
 )
 from pulsar import Client as PulsarClient
 
+
 # test comment to add a change
 def send_pulsar_message(bucket: str, key: str):
     """Send a Pulsar message to indicate an update to the item"""
