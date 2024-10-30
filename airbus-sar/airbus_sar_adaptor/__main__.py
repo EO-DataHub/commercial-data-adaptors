@@ -1,6 +1,8 @@
 import json
+import logging
 import mimetypes
 import sys
+from enum import Enum
 
 from airbus_sar_adaptor.api_utils import post_submit_order
 from airbus_sar_adaptor.s3_utils import (
@@ -17,13 +19,30 @@ from airbus_sar_adaptor.stac_utils import (
 )
 from pulsar import Client as PulsarClient
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
-# test comment to add a change
+
+class OrderStatus(Enum):
+    ORDERABLE = "orderable"
+    ORDERED = "ordered"
+    PENDING = "pending"
+    SHIPPING = "shipping"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    CANCELED = "canceled"
+
+
 def send_pulsar_message(bucket: str, key: str):
     """Send a Pulsar message to indicate an update to the item"""
     pulsar_client = PulsarClient("pulsar://pulsar-broker.pulsar:6650")
     producer = pulsar_client.create_producer(
-        topic="harvested", producer_name="resource_catalogue_fastapi"
+        topic="harvested",
+        producer_name="resource_catalogue_fastapi",
+        chunking_enabled=True,
     )
     parts = key.split("/")
     workspace = parts[0]
@@ -38,7 +57,7 @@ def send_pulsar_message(bucket: str, key: str):
         "source": workspace,
         "target": f"user-datasets/{workspace}",
     }
-    print(f"Sending message to pulsar: {output_data}")
+    logging.info(f"Sending message to pulsar: {output_data}")
     producer.send((json.dumps(output_data)).encode("utf-8"))
 
 
@@ -71,7 +90,7 @@ def update_stac_item_success(bucket: str, key: str, parent_folder: str, item_id:
                 "type": mime_type,
             }
     # Mark the order as succeeded and upload the updated STAC item
-    update_stac_order_status(stac_item, item_id, "succeeded")
+    update_stac_order_status(stac_item, item_id, OrderStatus.SUCCEEDED.value)
     upload_stac_item(bucket, key, stac_item)
     send_pulsar_message(bucket, key)
 
@@ -84,7 +103,7 @@ def update_stac_item_failure(bucket: str, key: str, item_id: str):
     stac_item = retrieve_stac_item(bucket, key)
 
     # Mark the order as failed and upload the updated STAC item
-    update_stac_order_status(stac_item, item_id, "failed")
+    update_stac_order_status(stac_item, item_id, OrderStatus.FAILED.value)
     upload_stac_item(bucket, key, stac_item)
     send_pulsar_message(bucket, key)
 
@@ -102,7 +121,7 @@ def main(stac_key: str, workspace_bucket: str):
         acquisition_id = get_acquisition_id_from_stac(stac_item, stac_key)
         item_id = post_submit_order(acquisition_id)
     except Exception as e:
-        print(f"Failed to submit order: {e}")
+        logging.error(f"Failed to submit order: {e}")
         update_stac_item_failure(workspace_bucket, stac_key, None)
         return
     try:
@@ -112,9 +131,10 @@ def main(stac_key: str, workspace_bucket: str):
             "commercial-data-airbus", workspace_bucket, stac_parent_folder, response
         )
     except Exception as e:
-        print(f"Failed to retrieve data: {e}")
+        logging.error(f"Failed to retrieve data: {e}")
         update_stac_item_failure(workspace_bucket, stac_key, item_id)
-        return
+    return
+
     update_stac_item_success(workspace_bucket, stac_key, stac_parent_folder, item_id)
 
 
