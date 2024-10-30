@@ -4,8 +4,6 @@ import mimetypes
 import sys
 from enum import Enum
 
-from pulsar import Client as PulsarClient
-
 from airbus_sar_adaptor.api_utils import post_submit_order
 from airbus_sar_adaptor.s3_utils import (
     list_objects_in_folder,
@@ -19,6 +17,8 @@ from airbus_sar_adaptor.stac_utils import (
     update_stac_order_status,
     write_stac_item_and_catalog,
 )
+from pulsar import Client as PulsarClient
+
 
 logging.basicConfig(
     level=logging.INFO,
