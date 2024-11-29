@@ -87,7 +87,7 @@ def update_stac_item_success(
                 mime_type = "application/octet-stream"  # Default MIME type
 
             # Add asset link to the file
-            parts = key.split("/", 1)
+            parts = file_key.split("/", 1)
             workspace = parts[0]
             file_subpath = parts[1]
             stac_item["assets"][asset_name] = {
