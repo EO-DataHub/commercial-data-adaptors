@@ -19,6 +19,14 @@ $graph:
         label: bucket containing workspace contents to download data to
         doc: bucket containing workspace contents to download data to
         type: string
+      workspace_domain:
+        label: domain for the EODH workspace environment within which the data is stored
+        doc: domain for the EODH workspace environment within which the data is stored
+        type: string
+      env:
+        label: environment identifier within the Airbus ecosystem
+        doc: environment identifier within the Airbus ecosystem
+        type: string
     outputs:
       - id: results
         type: Directory
@@ -30,6 +38,8 @@ $graph:
         in:
           stac_key: stac_key
           workspace_bucket: workspace_bucket
+          workspace_domain: workspace_domain
+          env: env
         out:
           - results
   # convert.sh - takes input args `--url`
@@ -37,7 +47,7 @@ $graph:
     id: airbus-sar-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/n1b3o1k2/airbus-sar-adaptor:0.0.1-rc6
+        dockerPull: public.ecr.aws/n1b3o1k2/airbus-sar-adaptor:0.0.2
     baseCommand: ["python", "-m", "airbus_sar_adaptor"]
     inputs:
       stac_key:
@@ -48,6 +58,14 @@ $graph:
         type: string
         inputBinding:
           position: 2
+      workspace_domain:
+        type: string
+        inputBinding:
+          position: 3
+      env:
+        type: string
+        inputBinding:
+          position: 4
 
     outputs:
       results:

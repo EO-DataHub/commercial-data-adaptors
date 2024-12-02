@@ -4,10 +4,17 @@ import logging
 
 def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, item_id: str):
     """Creates local catalog containing final STAC item to be used as a record for the order"""
+    # Rewrite STAC links to point to local files only
+    stac_item["links"] = [
+        {"rel": "self", "href": stac_item_filename, "type": "application/json"},
+        {"rel": "parent", "href": "catalog.json", "type": "application/json"},
+    ]
+
     # Write the STAC item to a file
     with open(stac_item_filename, "w") as f:
         json.dump(stac_item, f, indent=2)
     logging.info(f"Created STAC item '{stac_item_filename}' locally.")
+    logging.debug(f"STAC item: {stac_item}")
 
     # If not item_id, the order has failed
     if not item_id:
@@ -29,6 +36,7 @@ def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, item_i
     with open("catalog.json", "w") as f:
         json.dump(stac_catalog, f, indent=2)
     logging.info("Created STAC catalog catalog.json locally.")
+    logging.debug(f"STAC catalog: {stac_catalog}")
 
 
 def update_stac_order_status(stac_item: dict, item_id: str, order_status: str):

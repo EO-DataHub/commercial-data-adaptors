@@ -3,10 +3,12 @@
 
 @scheme = https
 @ades=dev.eodatahub.org.uk/ades
-@username=apalmer_tpzuk
+@username=airbus
 @workspace = apalmer-tpzuk
-@stacKey = apalmer-tpzuk/commercial-data/collections/airbus_sar_data/items/TDX-1_SL_D_spot_029R_75359_A12865033_1711.json
-@workspaceBucket = eodhp-dev-workspaces
+@stacKey = apalmer-tpzuk/commercial-data/collections/airbus_sar_data/items/TDX-1_SC_S_scan_005R_80035_A12370838_22781.json
+@workspaceBucket = workspaces-eodhp-dev
+@workspaceDomain = workspaces.dev.eodhp.eco-ke-staging.com
+@env = prod
 
 @deployStatus = {{deployProcessJson.response.headers.Location}}
 @executeStatus = {{executeProcess.response.headers.Location}}
@@ -63,7 +65,9 @@ Prefer: respond-async
   "inputs": {
     "workspace": "{{workspace}}",
     "stac_key": "{{stacKey}}",
-    "workspace_bucket":  "{{workspaceBucket}}"
+    "workspace_bucket":  "{{workspaceBucket}}",
+    "workspace_domain":  "{{workspaceDomain}}",
+    "env": "{{env}}"
   }
 }
 

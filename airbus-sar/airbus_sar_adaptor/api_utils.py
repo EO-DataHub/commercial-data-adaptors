@@ -58,7 +58,18 @@ def post_submit_order(acquisition_id: str, env: str = "dev") -> str:
         "Content-Type": "application/json",
     }
 
-    body = {"acquisitions": [acquisition_id]}
+    body = {
+        "acquisitions": [acquisition_id],
+        "orderTemplate": "Single User License",
+        "orderOptions": {
+            "productType": "MGD",
+            "resolutionVariant": "RE",
+            "orbitType": "science",
+            "mapProjection": "auto",
+            "gainAttenuation": 0,
+        },
+        "purpose": "IT Service Company",
+    }
 
     logging.info(f"Sending POST request to submit an order with {body}")
 
@@ -69,7 +80,7 @@ def post_submit_order(acquisition_id: str, env: str = "dev") -> str:
     logging.info(f"Order submitted: {body}")
     for feature in body["features"]:
         if feature["properties"]["acquisitionId"] == acquisition_id:
-            return feature["properties"]["itemId"]
+            return feature["properties"]["orderItemId"]
 
     return None
 
@@ -121,5 +132,38 @@ def post_items_status(env: str = "dev") -> dict:
     response.raise_for_status()
 
     body = response.json()
-    logging.info(f"Order submitted: {body}")
+    logging.info(f"Status response: {body}")
+    return body
+
+
+def is_order_in_progress(acquisition_id: str, env: str = "dev") -> bool:
+    """Check if an order for a SAR acquisition is in progress"""
+    status = post_items_status(env)
+    for feature in status:
+        if feature.get("acquisitionId") == acquisition_id:
+            return feature.get("status") == "submitted"
+
+    return False
+
+
+def get_order_templates(env: str = "dev") -> dict:
+    """Retrieve all available order templates via GET request"""
+    if env == "prod":
+        url = "https://sar.api.oneatlas.airbus.com"
+    else:
+        url = "https://dev.sar.api.oneatlas.airbus.com"
+
+    access_token = generate_access_token(env)
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+    }
+
+    logging.info("Sending GET request to retrieve order templates")
+
+    response = requests.get(f"{url}/v1/sar/config/orderTemplates", headers=headers)
+    response.raise_for_status()
+
+    body = response.json()
+    logging.info(f"Order templates: {body}")
     return body
