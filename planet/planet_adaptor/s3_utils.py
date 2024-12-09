@@ -1,0 +1,124 @@
+import json
+import logging
+import os
+import tarfile
+import tempfile
+import time
+import zipfile
+
+import boto3
+
+s3 = boto3.client("s3")
+
+
+class PollingTimeoutError(Exception):
+    """Custom exception for polling timeout"""
+
+    pass
+
+
+def poll_s3_for_data(
+    source_bucket: str, order_id: str, item_id: str, polling_interval: int = 60, timeout: int = 86400
+) -> dict:
+    """Poll the airbus S3 bucket for item_id and download the data"""
+    start_time = time.time()
+    end_time = start_time + timeout
+
+    while True:
+        # Check if the .tar.gz file exists in the source bucket
+        logging.info(f"Checking for {order_id} folder in bucket {source_bucket}...")
+        # response = s3.list_objects_v2(Bucket=source_bucket, Prefix=f"/planet/{order_id}")
+        response = s3.list_objects_v2(Bucket=source_bucket, Prefix=f"{order_id}/")
+        print(response)
+        for obj in response.get("Contents", []):
+            print(obj)
+            if obj["Key"].endswith(f"{order_id}/manifest.json"):
+                logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
+                return obj
+
+        # Check for timeout
+        if time.time() > end_time:
+            raise PollingTimeoutError(
+                f"Timeout reached while polling for {item_id} in bucket {source_bucket} after {timeout} seconds."
+            )
+
+        # Wait for the specified interval before checking again
+        time.sleep(polling_interval)
+
+
+def unzip_and_upload_to_s3(
+    source_bucket: str, destination_bucket: str, parent_folder: str, order_id: str, item_id: str
+):
+    """Unzip the contents of a .zip file from S3 and upload them to a different S3 bucket"""
+
+    response = s3.list_objects_v2(Bucket=source_bucket, Prefix=order_id)
+
+    for obj in response.get("Contents", []):
+        print('AAAAAAAAAAAAAAAA')
+        print(obj)
+        if obj["Key"].endswith(".zip"):
+            logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
+
+            # Create a temporary directory to store the downloaded and extracted files
+            with tempfile.TemporaryDirectory() as tmpdir:
+                # Download the .zip file to the temporary directory
+                zip_path = os.path.join(tmpdir, os.path.basename(obj["Key"]))
+                s3.download_file(source_bucket, obj["Key"], zip_path)
+                logging.info(
+                    f"Downloaded '{obj['Key']}' from bucket '{source_bucket}' to '{zip_path}'."
+                )
+
+                # Rename zip file with item ID instead of order ID
+                try:
+                    new_zip_path = zip_path.replace(order_id, item_id)
+                    os.replace(zip_path, new_zip_path)
+                except OSError:
+                    new_zip_path = zip_path
+
+                # Extract the contents of the .tar.gz file
+                with zipfile.ZipFile(new_zip_path) as z:
+                    z.extractall(tmpdir)
+                    logging.info(f"Extracted '{obj['Key']}' to '{tmpdir}'.")
+
+                # Upload the extracted files to the destination bucket
+                for root, _, files in os.walk(tmpdir):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        relative_path = os.path.relpath(file_path, tmpdir)
+                        s3_key = os.path.join(parent_folder, relative_path)
+                        s3.upload_file(file_path, destination_bucket, s3_key)
+                        logging.info(
+                            f"Uploaded '{file_path}' to '{s3_key}' in bucket '{destination_bucket}'."
+                        )
+
+
+def retrieve_stac_item(bucket: str, key: str) -> dict:
+    """Retrieve a STAC item from an S3 bucket"""
+    # Retrieve the STAC item from S3
+    stac_item_obj = s3.get_object(Bucket=bucket, Key=key)
+    stac_item = json.loads(stac_item_obj["Body"].read().decode("utf-8"))
+    return stac_item
+
+
+def list_objects_in_folder(bucket: str, folder_prefix: str) -> dict:
+    """List objects in an S3 bucket with a specified folder prefix"""
+    return s3.list_objects_v2(Bucket=bucket, Prefix=folder_prefix)
+
+
+def upload_stac_item(bucket: str, key: str, stac_item: dict):
+    """Upload a STAC item to an S3 bucket"""
+    s3.put_object(Bucket=bucket, Key=key, Body=json.dumps(stac_item))
+    logging.info(f"Uploaded STAC item {key} to bucket {bucket}")
+
+
+def assume_role():
+    sts_client = boto3.client('sts')
+
+    assumed_role_object = sts_client.assume_role(
+        RoleArn="arn:aws:iam::312280911266:role/ResourceCataloguePlanet-eodhp-dev-y4jFxoD4",
+        RoleSessionName="AssumeRoleSession1"
+    )
+
+    credentials = assumed_role_object['Credentials']
+
+    return credentials
