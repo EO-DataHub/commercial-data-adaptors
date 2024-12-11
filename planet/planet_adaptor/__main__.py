@@ -1,3 +1,5 @@
+# aws sts assume-role --role-arn arn:aws:iam::312280911266:role/ResourceCataloguePlanet-eodhp-dev-y4jFxoD4  --role-session-name test
+# hcollingwood@ukwgpvdi025:~/Documents/Code/commercial-data-adaptors$ aws s3 cp README.md s3://commercial-planet-data/
 import asyncio
 import json
 import logging
@@ -5,7 +7,7 @@ import mimetypes
 import sys
 from enum import Enum
 
-from api_utils import create_order_request, define_delivery, is_order_in_progress, submit_order, get_api_key_from_secret
+from api_utils import create_order_request, define_delivery, is_order_in_progress_or_complete, submit_order, get_api_key_from_secret
 from s3_utils import (
     assume_role,
     list_objects_in_folder,
@@ -160,23 +162,31 @@ async def get_existing_order_details(item_id):
     orders_client = planet.OrdersClient(session=session)
 
     async for order in orders_client.list_orders():
-        print(order)
-        print(dir(order))
-
-        for item in order['products']['item_ids']:
-            if item == item_id:
-                return order
+        for product in order['products']:
+            for product_item_id in product['item_ids']:
+                if product_item_id == item_id:
+                    return order
                 # return order['id'], order['state']
 
     return {}
 
 
+def get_credentials():
+
+    print('DDDDDDDDDDDDDDDDDDDDDDDDD')
+    import os
+    return {"AccessKeyId": os.environ['AWS_ACCESS_KEY'], 'SecretAccessKey': os.environ['AWS_SECRET_KEY']}
+
+    return {"AccessKeyId": get_api_key_from_secret("aws-access-key-id", "aws-access-key-id"),
+            "SecretAccessKey": get_api_key_from_secret("aws-secret-access-key", "aws-secret-access-key")
+            }
 
 
 def main(stac_key: str, workspace_bucket: str, workspace_domain: str):
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
     stac_parent_folder = "/".join(stac_key.split("/")[:-1])
+    planet_data_bucket = "commercial-planet-data"
     try:
         # Submit an order for the given STAC item
         logging.info(f"Retrieving STAC item {stac_key} from bucket {workspace_bucket}")
@@ -184,47 +194,57 @@ def main(stac_key: str, workspace_bucket: str, workspace_domain: str):
 
         item_id, collection_id = get_id_and_collection_from_stac(stac_item, stac_key)
 
+        print('ooooooooooooooo')
+        print(item_id)
+        print(collection_id)
+
         order = asyncio.run(get_existing_order_details(item_id))
 
 
         print('xyyyyyyyyyyyyyyyyyyyyyy')
         print(order)
-        print(dir(order))
-
-        if is_order_in_progress(order):
+        order_status = order.get('state')
+        logging.info(f"Order status: {order_status}")
+        if order_status == "queued":
+            print('PPPPPPPPPPPPPPPPPPPPPPPPP')
             order_id = order.get('id')
-            logging.info(f"Order for {item_id} is already in progress: {order_id}")
+            logging.info(f"Order for {item_id} has already been submitted: {order_id}")
             # TODO: Check if the order in progress is for the exact same item
             update_stac_item_failure(workspace_bucket, stac_key, None)
+            print(order_id)
             return
 
-        print(44444444)
+        if not order_status == "success":
 
-        """Uncomment these to submit order"""
-        # credentials = assume_role()
-        #
-        # print(6666666666)
-        #
-        # delivery_request = define_delivery(credentials, workspace_bucket)
-        #
-        # print(delivery_request)
-        # print('3333333333333333')
-        # order_request = create_order_request(item_id, collection_id, delivery_request)
-        # print(order_request)
+            print('444444444')
+            """Uncomment these to submit order"""
+            credentials = get_credentials()
+            print(6666666666)
+            print(credentials)
+            print('///////////////////')
+            delivery_request = define_delivery(credentials, planet_data_bucket)
+            print(delivery_request)
+            print('3333333333333333')
+            order_request = create_order_request(item_id, collection_id, delivery_request)
+            print(order_request)
+            #
+            # import sys;sys.exit()
+            print('tttttttttttttttttttttttttttttttttttttttt')
+            # import sys;sys.exit()
+            order_details = asyncio.run(submit_order(order_request))
+            print(order_details)
+            order = asyncio.run(get_existing_order_details(item_id))
 
-        # import sys;sys.exit()
-        # order_details = submit_order(order_request)
-        # print(order_details)
-        # order = asyncio.run(get_existing_order_details(item_id))
 
-
-        order = {'id': '1236'}
 
 
 
         print('xzzzzzzzzzzzzz')
         print(order)
         order_id = order.get('id')
+        print(order_id)
+
+        # import sys;sys.exit()
 
     except Exception as e:
         logging.error(f"Failed to submit order: {e}")
@@ -234,7 +254,7 @@ def main(stac_key: str, workspace_bucket: str, workspace_domain: str):
     print('22222222222')
     try:
         # Wait for data from planet to arrive, then move it to the workspace
-        obj = poll_s3_for_data(source_bucket="commercial-planet-data", order_id=order_id, item_id=item_id)
+        obj = poll_s3_for_data(source_bucket=planet_data_bucket, order_id=order_id, item_id=item_id)
         # obj = poll_s3_for_data(source_bucket="hc-test-bucket-can-be-deleted", order_id=order_id, item_id=item_id)
 
         print(obj)

@@ -72,14 +72,14 @@ def create_order_request(item_id: str, collection_id: str, delivery: dict) -> st
     aoi = {
        "type":
        "Polygon",
-       "coordinates": [[[25.4, 35.31], [25.39, 35.3],
-                        [25.4, 35.29], [25.41, 35.3],
-                        [25.4, 35.31]]]
+       "coordinates": [[[113.4, 23.5], [113.4,23.6],
+                        [113.5,23.6],[113.5,23.5],
+                        [113.4, 23.5]]]
    }
     # TODO: remove this later
 
     order = planet.order_request.build_request(
-        name='order',
+        name=item_id,
         products=[
             planet.order_request.product(item_ids=[item_id],
                                          product_bundle='analytic_udm2',
@@ -203,14 +203,11 @@ async def submit_order(order_details) -> str:
 #     return body
 
 
-def is_order_in_progress(order: dict) -> bool:
-    """Check if an order for a SAR acquisition is in progress"""
-    # status = post_items_status(env)
-    if order.get('status') == "queued":
+def is_order_in_progress_or_complete(order: dict) -> bool:
+    """Check if an order for an acquisition is in progress or has already completed"""
+
+    if order.get('state') in ["queued", "success"]:
         return True
-    # for feature in status:
-    #     if feature.get("acquisitionId") == acquisition_id:
-    #         return feature.get("status") == "submitted"
 
     return False
 

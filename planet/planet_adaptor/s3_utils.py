@@ -8,7 +8,8 @@ import zipfile
 
 import boto3
 
-s3 = boto3.client("s3")
+s3_client = boto3.client("s3")
+s3_resource = boto3.resource("s3")
 
 
 class PollingTimeoutError(Exception):
@@ -27,8 +28,7 @@ def poll_s3_for_data(
     while True:
         # Check if the .tar.gz file exists in the source bucket
         logging.info(f"Checking for {order_id} folder in bucket {source_bucket}...")
-        # response = s3.list_objects_v2(Bucket=source_bucket, Prefix=f"/planet/{order_id}")
-        response = s3.list_objects_v2(Bucket=source_bucket, Prefix=f"{order_id}/")
+        response = s3_client.list_objects_v2(Bucket=source_bucket, Prefix=f"planet/{order_id}/")
         print(response)
         for obj in response.get("Contents", []):
             print(obj)
@@ -51,7 +51,7 @@ def unzip_and_upload_to_s3(
 ):
     """Unzip the contents of a .zip file from S3 and upload them to a different S3 bucket"""
 
-    response = s3.list_objects_v2(Bucket=source_bucket, Prefix=order_id)
+    response = s3_client.list_objects_v2(Bucket=source_bucket, Prefix=f"planet/{order_id}")
 
     for obj in response.get("Contents", []):
         print('AAAAAAAAAAAAAAAA')
@@ -63,7 +63,7 @@ def unzip_and_upload_to_s3(
             with tempfile.TemporaryDirectory() as tmpdir:
                 # Download the .zip file to the temporary directory
                 zip_path = os.path.join(tmpdir, os.path.basename(obj["Key"]))
-                s3.download_file(source_bucket, obj["Key"], zip_path)
+                s3_client.download_file(source_bucket, obj["Key"], zip_path)
                 logging.info(
                     f"Downloaded '{obj['Key']}' from bucket '{source_bucket}' to '{zip_path}'."
                 )
@@ -75,7 +75,7 @@ def unzip_and_upload_to_s3(
                 except OSError:
                     new_zip_path = zip_path
 
-                # Extract the contents of the .tar.gz file
+                # Extract the contents of the .zip file
                 with zipfile.ZipFile(new_zip_path) as z:
                     z.extractall(tmpdir)
                     logging.info(f"Extracted '{obj['Key']}' to '{tmpdir}'.")
@@ -86,28 +86,37 @@ def unzip_and_upload_to_s3(
                         file_path = os.path.join(root, file)
                         relative_path = os.path.relpath(file_path, tmpdir)
                         s3_key = os.path.join(parent_folder, relative_path)
-                        s3.upload_file(file_path, destination_bucket, s3_key)
+                        s3_client.upload_file(file_path, destination_bucket, s3_key)
                         logging.info(
                             f"Uploaded '{file_path}' to '{s3_key}' in bucket '{destination_bucket}'."
                         )
+        else:
+
+            dest_file_path = f"{parent_folder.rsplit('/', 1)[0]}/{item_id}/{obj['Key']}"
+            source = {'Bucket': source_bucket, 'Key': obj['Key']}
+            dest = s3_resource.Bucket(destination_bucket)
+            dest.copy(source, dest_file_path)
+            logging.info(
+                f"Uploaded '{obj["Key"]}' to '{dest_file_path}' in bucket '{destination_bucket}'."
+            )
 
 
 def retrieve_stac_item(bucket: str, key: str) -> dict:
     """Retrieve a STAC item from an S3 bucket"""
     # Retrieve the STAC item from S3
-    stac_item_obj = s3.get_object(Bucket=bucket, Key=key)
+    stac_item_obj = s3_client.get_object(Bucket=bucket, Key=key)
     stac_item = json.loads(stac_item_obj["Body"].read().decode("utf-8"))
     return stac_item
 
 
 def list_objects_in_folder(bucket: str, folder_prefix: str) -> dict:
     """List objects in an S3 bucket with a specified folder prefix"""
-    return s3.list_objects_v2(Bucket=bucket, Prefix=folder_prefix)
+    return s3_client.list_objects_v2(Bucket=bucket, Prefix=folder_prefix)
 
 
 def upload_stac_item(bucket: str, key: str, stac_item: dict):
     """Upload a STAC item to an S3 bucket"""
-    s3.put_object(Bucket=bucket, Key=key, Body=json.dumps(stac_item))
+    s3_client.put_object(Bucket=bucket, Key=key, Body=json.dumps(stac_item))
     logging.info(f"Uploaded STAC item {key} to bucket {bucket}")
 
 
