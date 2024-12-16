@@ -5,7 +5,12 @@ import mimetypes
 import sys
 from enum import Enum
 
-from planet_adaptor.api_utils import create_order_request, define_delivery, submit_order, get_api_key_from_secret
+from planet_adaptor.api_utils import (
+    create_order_request,
+    define_delivery,
+    submit_order,
+    get_api_key_from_secret,
+)
 from planet_adaptor.s3_utils import (
     list_objects_in_folder,
     poll_s3_for_data,
@@ -120,26 +125,25 @@ def update_stac_item_failure(bucket: str, key: str, item_id: str):
 
 def generate_request(item_id, collection, credentials, bucket, region="eu-west-2"):
     return {
-       "name": "amazon_s3_delivery_order",
-       "products": [
-          {
-             "item_ids": [
-                item_id
-             ],
-             "item_type": collection,
-             "product_bundle":"analytic_udm2"
-          }
-       ],
-       "delivery": {
-          "amazon_s3": {
-             "bucket": bucket,
-             "aws_region": region,
-             "aws_access_key_id": credentials['AccessKeyId'],
-             "aws_secret_access_key": credentials['SecretAccessKey'],
-             "path_prefix": "planet/"
-          }
-       }
+        "name": "amazon_s3_delivery_order",
+        "products": [
+            {
+                "item_ids": [item_id],
+                "item_type": collection,
+                "product_bundle": "analytic_udm2",
+            }
+        ],
+        "delivery": {
+            "amazon_s3": {
+                "bucket": bucket,
+                "aws_region": region,
+                "aws_access_key_id": credentials["AccessKeyId"],
+                "aws_secret_access_key": credentials["SecretAccessKey"],
+                "path_prefix": "planet/",
+            }
+        },
     }
+
 
 async def get_existing_order_details(item_id):
     planet_api_key = get_api_key_from_secret("api-keys", "planet-key")
@@ -149,8 +153,8 @@ async def get_existing_order_details(item_id):
     orders_client = planet.OrdersClient(session=session)
 
     async for order in orders_client.list_orders():
-        for product in order['products']:
-            for product_item_id in product['item_ids']:
+        for product in order["products"]:
+            for product_item_id in product["item_ids"]:
                 if product_item_id == item_id:
                     return order
                 # return order['id'], order['state']
@@ -160,9 +164,14 @@ async def get_existing_order_details(item_id):
 
 def get_credentials() -> dict:
 
-    return {"AccessKeyId": get_api_key_from_secret("planet-aws-access-key-id", "planet-aws-access-key-id"),
-            "SecretAccessKey": get_api_key_from_secret("planet-aws-secret-access-key", "planet-aws-secret-access-key")
-            }
+    return {
+        "AccessKeyId": get_api_key_from_secret(
+            "planet-aws-access-key-id", "planet-aws-access-key-id"
+        ),
+        "SecretAccessKey": get_api_key_from_secret(
+            "planet-aws-secret-access-key", "planet-aws-secret-access-key"
+        ),
+    }
 
 
 def main(stac_key: str, workspace_bucket: str, workspace_domain: str):
@@ -181,10 +190,10 @@ def main(stac_key: str, workspace_bucket: str, workspace_domain: str):
 
         order = asyncio.run(get_existing_order_details(item_id))
 
-        order_status = order.get('state')
+        order_status = order.get("state")
         logging.info(f"Order status: {order_status}")
         if order_status in ["queued", "running"]:
-            order_id = order.get('id')
+            order_id = order.get("id")
             logging.info(f"Order for {item_id} has already been submitted: {order_id}")
             update_stac_item_failure(workspace_bucket, stac_key, None)
             return
@@ -193,13 +202,15 @@ def main(stac_key: str, workspace_bucket: str, workspace_domain: str):
             credentials = get_credentials()
 
             delivery_request = define_delivery(credentials, planet_data_bucket)
-            order_request = create_order_request(item_id, collection_id, delivery_request)
+            order_request = create_order_request(
+                item_id, collection_id, delivery_request
+            )
 
             asyncio.run(submit_order(order_request))
 
             order = asyncio.run(get_existing_order_details(item_id))
 
-        order_id = order.get('id')
+        order_id = order.get("id")
         logging.info(f"Found order ID {order_id}")
 
     except Exception as e:
@@ -209,14 +220,16 @@ def main(stac_key: str, workspace_bucket: str, workspace_domain: str):
 
     try:
         # Wait for data from planet to arrive, then move it to the workspace
-        poll_s3_for_data(source_bucket=planet_data_bucket, order_id=order_id, item_id=item_id)
+        poll_s3_for_data(
+            source_bucket=planet_data_bucket, order_id=order_id, item_id=item_id
+        )
 
         unzip_and_upload_to_s3(
             "commercial-planet-data",
             workspace_bucket,
             f"{stac_parent_folder}/{order_id}",
             order_id,
-            item_id
+            item_id,
         )
     except Exception as e:
         logging.error(f"Failed to retrieve data: {e}")

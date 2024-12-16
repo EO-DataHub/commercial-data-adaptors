@@ -18,7 +18,11 @@ class PollingTimeoutError(Exception):
 
 
 def poll_s3_for_data(
-    source_bucket: str, order_id: str, item_id: str, polling_interval: int = 60, timeout: int = 86400
+    source_bucket: str,
+    order_id: str,
+    item_id: str,
+    polling_interval: int = 60,
+    timeout: int = 86400,
 ) -> dict:
     """Poll the airbus S3 bucket for item_id and download the data"""
     start_time = time.time()
@@ -27,7 +31,9 @@ def poll_s3_for_data(
     while True:
         # Check if the .tar.gz file exists in the source bucket
         logging.info(f"Checking for {order_id} folder in bucket {source_bucket}...")
-        response = s3_client.list_objects_v2(Bucket=source_bucket, Prefix=f"planet/{order_id}/")
+        response = s3_client.list_objects_v2(
+            Bucket=source_bucket, Prefix=f"planet/{order_id}/"
+        )
         for obj in response.get("Contents", []):
             if obj["Key"].endswith(f"{order_id}/manifest.json"):
                 logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
@@ -44,11 +50,17 @@ def poll_s3_for_data(
 
 
 def unzip_and_upload_to_s3(
-    source_bucket: str, destination_bucket: str, parent_folder: str, order_id: str, item_id: str
+    source_bucket: str,
+    destination_bucket: str,
+    parent_folder: str,
+    order_id: str,
+    item_id: str,
 ):
     """Unzip the contents of a .zip file from S3 and upload them to a different S3 bucket"""
 
-    response = s3_client.list_objects_v2(Bucket=source_bucket, Prefix=f"planet/{order_id}")
+    response = s3_client.list_objects_v2(
+        Bucket=source_bucket, Prefix=f"planet/{order_id}"
+    )
 
     for obj in response.get("Contents", []):
         logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
@@ -87,11 +99,12 @@ def unzip_and_upload_to_s3(
                         )
         else:
             dest_file_path = f"{parent_folder.rsplit('/', 1)[0]}/{item_id}/{obj['Key']}"
-            source = {'Bucket': source_bucket, 'Key': obj['Key']}
+            source = {"Bucket": source_bucket, "Key": obj["Key"]}
             dest = s3_resource.Bucket(destination_bucket)
             dest.copy(source, dest_file_path)
+            file_name = obj["Key"]
             logging.info(
-                f"Uploaded '{obj["Key"]}' to '{dest_file_path}' in bucket '{destination_bucket}'."
+                f"Uploaded '{file_name}' to '{dest_file_path}' in bucket '{destination_bucket}'."
             )
 
 

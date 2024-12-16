@@ -21,11 +21,11 @@ def get_api_key_from_secret(
 
 def define_delivery(credentials: dict, bucket: str) -> dict:
     return planet.order_request.amazon_s3(
-        credentials['AccessKeyId'],
-        credentials['SecretAccessKey'],
+        credentials["AccessKeyId"],
+        credentials["SecretAccessKey"],
         bucket,
-        'eu-west-2',
-        path_prefix="planet"
+        "eu-west-2",
+        path_prefix="planet",
     )
 
 
@@ -35,11 +35,13 @@ def create_order_request(item_id: str, collection_id: str, delivery: dict) -> di
     order = planet.order_request.build_request(
         name=item_id,
         products=[
-            planet.order_request.product(item_ids=[item_id],
-                                         product_bundle='analytic_udm2',
-                                         item_type=collection_id)
+            planet.order_request.product(
+                item_ids=[item_id],
+                product_bundle="analytic_udm2",
+                item_type=collection_id,
+            )
         ],
-        delivery=delivery
+        delivery=delivery,
     )
 
     return order
@@ -52,7 +54,7 @@ async def submit_order(order_details) -> str:
     async with planet.Session(auth=auth) as sess:
 
         # 'orders' is the service name for the Orders API.
-        cl = sess.client('orders')
+        cl = sess.client("orders")
 
         order = await cl.create_order(order_details)
 
