@@ -5,11 +5,14 @@ import mimetypes
 import sys
 from enum import Enum
 
+from pulsar import Client as PulsarClient
+
+import planet
 from planet_adaptor.api_utils import (
     create_order_request,
     define_delivery,
-    submit_order,
     get_api_key_from_secret,
+    submit_order,
 )
 from planet_adaptor.s3_utils import (
     list_objects_in_folder,
@@ -23,8 +26,6 @@ from planet_adaptor.stac_utils import (
     update_stac_order_status,
     write_stac_item_and_catalog,
 )
-import planet
-from pulsar import Client as PulsarClient
 
 logging.basicConfig(
     level=logging.INFO,
