@@ -1,16 +1,4 @@
 ## Before attempting to run please provide your API Token in the following variable. You can generate this from the Hub website: https://test.eodatahub.org.uk/workspaces/
-#@apiToken=454f444829fdbae22cf5964d81973718 
-# h
-@apiToken=454f44486182385102c76e2444edd721
-# p
-
-# delete old processes as PLANET
-# list processes
-# docker build
-# deployProcessJson as PLANET
-# list processes
-# execute process as ME
-# list processes 
 
 @scheme = https
 @ades=dev.eodatahub.org.uk/ades

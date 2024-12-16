@@ -1,7 +1,4 @@
 import base64
-import logging
-
-import requests
 from kubernetes import client, config
 import planet
 
@@ -22,33 +19,7 @@ def get_api_key_from_secret(
     return api_key
 
 
-# def generate_access_token(env: str = "dev") -> str:
-#     """Generate an access token for the Planet API"""
-#     api_key = get_api_key_from_secret("api-keys", "airbus-key")
-#
-#     print('URL goes here')
-#     url = '3'
-#     # if env == "prod":
-#     #     url = "https://authenticate.foundation.api.oneatlas.airbus.com/auth/realms/IDP/protocol/openid-connect/token"
-#     # else:
-#     #     url = "https://authenticate-int.idp.private.geoapi-airbusds.com/auth/realms/IDP/protocol/openid-connect/token"
-#
-#     headers = {
-#         "Content-Type": "application/x-www-form-urlencoded",
-#     }
-#
-#     data = [
-#         ("apikey", api_key),
-#         ("grant_type", "api_key"),
-#         ("client_id", "IDP"),
-#     ]
-#
-#     response = requests.post(url, headers=headers, data=data)
-#
-#     return response.json()["access_token"]
-
-
-def define_delivery(credentials: dict, bucket: str):
+def define_delivery(credentials: dict, bucket: str) -> dict:
     return planet.order_request.amazon_s3(
         credentials['AccessKeyId'],
         credentials['SecretAccessKey'],
@@ -58,25 +29,8 @@ def define_delivery(credentials: dict, bucket: str):
     )
 
 
-def create_order_request(item_id: str, collection_id: str, delivery: dict) -> str:
+def create_order_request(item_id: str, collection_id: str, delivery: dict) -> dict:
     """Create an order for Planet data"""
-
-    print(',,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,')
-   #  aoi = {
-   #     "type":
-   #     "Polygon",
-   #     "coordinates": [[[-117.558734, 45.229745], [-117.452447, 45.229745],
-   #                      [-117.452447, 45.301865], [-117.558734, 45.301865],
-   #                      [-117.558734, 45.229745]]]
-   # }
-    aoi = {
-       "type":
-       "Polygon",
-       "coordinates": [[[113.4, 23.5], [113.4,23.6],
-                        [113.5,23.6],[113.5,23.5],
-                        [113.4, 23.5]]]
-   }
-    # TODO: remove this later
 
     order = planet.order_request.build_request(
         name=item_id,
@@ -85,7 +39,6 @@ def create_order_request(item_id: str, collection_id: str, delivery: dict) -> st
                                          product_bundle='analytic_udm2',
                                          item_type=collection_id)
         ],
-        tools=[planet.order_request.clip_tool(aoi=aoi)],
         delivery=delivery
     )
 
@@ -103,135 +56,4 @@ async def submit_order(order_details) -> str:
 
         order = await cl.create_order(order_details)
 
-        print('1111111111111111')
-        print(order)
         return order
-    # print('URL goes here')
-    # url = '3'
-    # # if env == "prod":
-    # #     url = "https://sar.api.oneatlas.airbus.com"
-    # # else:
-    # #     url = "https://dev.sar.api.oneatlas.airbus.com"
-    #
-    # access_token = generate_access_token(env)
-    # headers = {
-    #     "Authorization": f"Bearer {access_token}",
-    #     "Content-Type": "application/json",
-    # }
-    #
-    # body = {
-    #     "acquisitions": [acquisition_id],
-    #     "orderTemplate": "Single User License",
-    #     "orderOptions": {
-    #         "productType": "MGD",
-    #         "resolutionVariant": "RE",
-    #         "orbitType": "science",
-    #         "mapProjection": "auto",
-    #         "gainAttenuation": 0,
-    #     },
-    #     "purpose": "IT Service Company",
-    # }
-    #
-    # logging.info(f"Sending POST request to submit an order with {body}")
-    #
-    # response = requests.post(f"{url}/v1/sar/orders/submit", json=body, headers=headers)
-    # response.raise_for_status()
-    #
-    # body = response.json()
-    # logging.info(f"Order submitted: {body}")
-    # for feature in body["features"]:
-    #     if feature["properties"]["acquisitionId"] == acquisition_id:
-    #         return feature["properties"]["orderItemId"]
-    #
-    # return None
-
-
-# def post_cancel_order(item_id: str, env: str = "dev"):
-#     """Cancel an order for a SAR acquisition via POST request"""
-#
-#     print('URL goes here')
-#     url = '3'
-#     # if env == "prod":
-#     #     url = "https://sar.api.oneatlas.airbus.com"
-#     # else:
-#     #     url = "https://dev.sar.api.oneatlas.airbus.com"
-#
-#     access_token = generate_access_token(env)
-#     headers = {
-#         "Authorization": f"Bearer {access_token}",
-#         "Content-Type": "application/json",
-#     }
-#
-#     body = {"items": [item_id]}
-#
-#     logging.info(f"Sending POST request to cancel an order with {body}")
-#
-#     response = requests.post(f"{url}/v1/sar/orders/cancel", json=body, headers=headers)
-#     response.raise_for_status()
-#
-#     body = response.json()
-#     logging.info(f"Order canceled: {body}")
-
-
-# def post_items_status(env: str = "dev") -> dict:
-#     """Query the status of all orders via POST request"""
-#
-#     print('URL goes here')
-#     url = '3'
-#     # if env == "prod":
-#     #     url = "https://sar.api.oneatlas.airbus.com"
-#     # else:
-#     #     url = "https://dev.sar.api.oneatlas.airbus.com"
-#
-#     access_token = generate_access_token(env)
-#     headers = {
-#         "Authorization": f"Bearer {access_token}",
-#         "Content-Type": "application/json",
-#     }
-#
-#     body = {"limit": 200}
-#
-#     logging.info(f"Sending POST request to query status of all orders with {body}")
-#
-#     response = requests.post(
-#         f"{url}/v1/sar/orders/*/items/status", json=body, headers=headers
-#     )
-#     response.raise_for_status()
-#
-#     body = response.json()
-#     logging.info(f"Status response: {body}")
-#     return body
-
-
-def is_order_in_progress_or_complete(order: dict) -> bool:
-    """Check if an order for an acquisition is in progress or has already completed"""
-
-    if order.get('state') in ["queued", "success"]:
-        return True
-
-    return False
-
-
-# def get_order_templates(env: str = "dev") -> dict:
-#     """Retrieve all available order templates via GET request"""
-#     print('URL goes here')
-#     url = '3'
-#     # if env == "prod":
-#     #     url = "https://sar.api.oneatlas.airbus.com"
-#     # else:
-#     #     url = "https://dev.sar.api.oneatlas.airbus.com"
-#
-#     access_token = generate_access_token(env)
-#     headers = {
-#         "Authorization": f"Bearer {access_token}",
-#         "Content-Type": "application/json",
-#     }
-#
-#     logging.info("Sending GET request to retrieve order templates")
-#
-#     response = requests.get(f"{url}/v1/sar/config/orderTemplates", headers=headers)
-#     response.raise_for_status()
-#
-#     body = response.json()
-#     logging.info(f"Order templates: {body}")
-#     return body

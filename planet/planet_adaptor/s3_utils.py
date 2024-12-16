@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import tarfile
 import tempfile
 import time
 import zipfile
@@ -29,9 +28,7 @@ def poll_s3_for_data(
         # Check if the .tar.gz file exists in the source bucket
         logging.info(f"Checking for {order_id} folder in bucket {source_bucket}...")
         response = s3_client.list_objects_v2(Bucket=source_bucket, Prefix=f"planet/{order_id}/")
-        print(response)
         for obj in response.get("Contents", []):
-            print(obj)
             if obj["Key"].endswith(f"{order_id}/manifest.json"):
                 logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
                 return obj
@@ -54,11 +51,9 @@ def unzip_and_upload_to_s3(
     response = s3_client.list_objects_v2(Bucket=source_bucket, Prefix=f"planet/{order_id}")
 
     for obj in response.get("Contents", []):
-        print('AAAAAAAAAAAAAAAA')
-        print(obj)
-        if obj["Key"].endswith(".zip"):
-            logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
+        logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
 
+        if obj["Key"].endswith(".zip"):
             # Create a temporary directory to store the downloaded and extracted files
             with tempfile.TemporaryDirectory() as tmpdir:
                 # Download the .zip file to the temporary directory
@@ -91,7 +86,6 @@ def unzip_and_upload_to_s3(
                             f"Uploaded '{file_path}' to '{s3_key}' in bucket '{destination_bucket}'."
                         )
         else:
-
             dest_file_path = f"{parent_folder.rsplit('/', 1)[0]}/{item_id}/{obj['Key']}"
             source = {'Bucket': source_bucket, 'Key': obj['Key']}
             dest = s3_resource.Bucket(destination_bucket)
@@ -118,16 +112,3 @@ def upload_stac_item(bucket: str, key: str, stac_item: dict):
     """Upload a STAC item to an S3 bucket"""
     s3_client.put_object(Bucket=bucket, Key=key, Body=json.dumps(stac_item))
     logging.info(f"Uploaded STAC item {key} to bucket {bucket}")
-
-
-def assume_role():
-    sts_client = boto3.client('sts')
-
-    assumed_role_object = sts_client.assume_role(
-        RoleArn="arn:aws:iam::312280911266:role/ResourceCataloguePlanet-eodhp-dev-y4jFxoD4",
-        RoleSessionName="AssumeRoleSession1"
-    )
-
-    credentials = assumed_role_object['Credentials']
-
-    return credentials
