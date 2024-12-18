@@ -125,6 +125,7 @@ def update_stac_item_failure(bucket: str, key: str, item_id: str):
 
 
 def generate_request(item_id, collection, credentials, bucket, region="eu-west-2"):
+    """Generate a request body to submit an order for a Planet item"""
     return {
         "name": "amazon_s3_delivery_order",
         "products": [
@@ -158,12 +159,12 @@ async def get_existing_order_details(item_id):
             for product_item_id in product["item_ids"]:
                 if product_item_id == item_id:
                     return order
-                # return order['id'], order['state']
 
     return {}
 
 
 def get_credentials() -> dict:
+    """Get AWS credentials for delivery of Planet data"""
 
     return {
         "AccessKeyId": get_api_key_from_secret(

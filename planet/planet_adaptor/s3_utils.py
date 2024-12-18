@@ -24,12 +24,12 @@ def poll_s3_for_data(
     polling_interval: int = 60,
     timeout: int = 86400,
 ) -> dict:
-    """Poll the airbus S3 bucket for item_id and download the data"""
+    """Poll the planet S3 bucket for item_id and download the data"""
     start_time = time.time()
     end_time = start_time + timeout
 
     while True:
-        # Check if the .tar.gz file exists in the source bucket
+        # Check if the folder containing the order exists in the source bucket
         logging.info(f"Checking for {order_id} folder in bucket {source_bucket}...")
         response = s3_client.list_objects_v2(
             Bucket=source_bucket, Prefix=f"planet/{order_id}/"
