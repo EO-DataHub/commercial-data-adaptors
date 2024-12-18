@@ -1,0 +1,6 @@
+requests
+boto3
+kubernetes
+pulsar-client
+pytest
+planet
