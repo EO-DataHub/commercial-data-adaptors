@@ -124,29 +124,6 @@ def update_stac_item_failure(bucket: str, key: str, item_id: str):
     write_stac_item_and_catalog(stac_item, key.split("/")[-1], item_id)
 
 
-def generate_request(item_id, collection, credentials, bucket, region="eu-west-2"):
-    """Generate a request body to submit an order for a Planet item"""
-    return {
-        "name": "amazon_s3_delivery_order",
-        "products": [
-            {
-                "item_ids": [item_id],
-                "item_type": collection,
-                "product_bundle": "analytic_udm2",
-            }
-        ],
-        "delivery": {
-            "amazon_s3": {
-                "bucket": bucket,
-                "aws_region": region,
-                "aws_access_key_id": credentials["AccessKeyId"],
-                "aws_secret_access_key": credentials["SecretAccessKey"],
-                "path_prefix": "planet/",
-            }
-        },
-    }
-
-
 async def get_existing_order_details(item_id):
     planet_api_key = get_api_key_from_secret("api-keys", "planet-key")
     auth = planet.Auth.from_key(planet_api_key)
