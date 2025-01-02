@@ -51,8 +51,8 @@ def create_order_request(item_id: str, collection_id: str, delivery: dict) -> di
 
 async def submit_order(order_details) -> str:
     """Submit an order for Planet data"""
-
-    auth = planet.Auth.from_env(variable_name="PLANET_API_KEY")
+    planet_api_key = get_api_key_from_secret("api-keys", "planet-key")
+    auth = planet.Auth.from_key(planet_api_key)
     async with planet.Session(auth=auth) as sess:
 
         # 'orders' is the service name for the Orders API.
