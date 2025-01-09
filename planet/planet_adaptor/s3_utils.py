@@ -30,13 +30,16 @@ def poll_s3_for_data(
 
     while True:
         # Check if the folder containing the order exists in the source bucket
-        logging.info(f"Checking for {order_id} folder in bucket {source_bucket}...")
-        response = s3_client.list_objects_v2(
-            Bucket=source_bucket, Prefix=f"planet/{order_id}/"
-        )
+        folder = f"planet/commercial-data/{order_id}/"
+        logging.info(f"Checking for {folder} folder in bucket {source_bucket}...")
+        response = s3_client.list_objects_v2(Bucket=source_bucket, Prefix=folder)
         for obj in response.get("Contents", []):
-            if obj["Key"].endswith(f"{order_id}/manifest.json"):
-                logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
+            if obj["Key"].endswith(
+                f"{order_id}/manifest.json"
+            ):  # manifest.json is the final file to be delivered
+                logging.info(
+                    f"Data available: file '{obj['Key']}' found in bucket '{source_bucket}'."
+                )
                 return obj
 
         # Check for timeout
@@ -49,41 +52,45 @@ def poll_s3_for_data(
         time.sleep(polling_interval)
 
 
+def download_data(
+    bucket: str,
+    key: str,
+    file_name: str,
+) -> dict:
+    """Download the data and save locally"""
+
+    logging.info(f"Downloading from {bucket}/{key} and saving as {file_name}")
+    s3_client.download_file(bucket, key, file_name)
+
+    return file_name
+
+
 def unzip_and_upload_to_s3(
-    source_bucket: str,
-    destination_bucket: str,
+    bucket: str,
     parent_folder: str,
     order_id: str,
     item_id: str,
 ):
-    """Unzip the contents of a .zip file from S3 and upload them to a different S3 bucket"""
+    """Unzip the contents of a .zip file from S3 and upload them"""
 
-    response = s3_client.list_objects_v2(
-        Bucket=source_bucket, Prefix=f"planet/{order_id}"
-    )
+    response = s3_client.list_objects_v2(Bucket=bucket, Prefix=parent_folder)
 
     for obj in response.get("Contents", []):
-        logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
+        logging.info(f"File '{obj['Key']}' found in bucket '{bucket}'.")
 
         if obj["Key"].endswith(".zip"):
             # Create a temporary directory to store the downloaded and extracted files
+            logging.info("Zip file found. Unzipping...")
             with tempfile.TemporaryDirectory() as tmpdir:
                 # Download the .zip file to the temporary directory
                 zip_path = os.path.join(tmpdir, os.path.basename(obj["Key"]))
-                s3_client.download_file(source_bucket, obj["Key"], zip_path)
+                s3_client.download_file(bucket, obj["Key"], zip_path)
                 logging.info(
-                    f"Downloaded '{obj['Key']}' from bucket '{source_bucket}' to '{zip_path}'."
+                    f"Downloaded '{obj['Key']}' from bucket '{bucket}' to '{zip_path}'."
                 )
 
-                # Rename zip file with item ID instead of order ID
-                try:
-                    new_zip_path = zip_path.replace(order_id, item_id)
-                    os.replace(zip_path, new_zip_path)
-                except OSError:
-                    new_zip_path = zip_path
-
                 # Extract the contents of the .zip file
-                with zipfile.ZipFile(new_zip_path) as z:
+                with zipfile.ZipFile(zip_path) as z:
                     z.extractall(tmpdir)
                     logging.info(f"Extracted '{obj['Key']}' to '{tmpdir}'.")
 
@@ -92,19 +99,22 @@ def unzip_and_upload_to_s3(
                     for file in files:
                         file_path = os.path.join(root, file)
                         relative_path = os.path.relpath(file_path, tmpdir)
-                        s3_key = os.path.join(parent_folder, relative_path)
-                        s3_client.upload_file(file_path, destination_bucket, s3_key)
+                        s3_key = os.path.join(item_id, relative_path)
+
+                        s3_client.upload_file(file_path, bucket, f"planet/{s3_key}")
                         logging.info(
-                            f"Uploaded '{file_path}' to '{s3_key}' in bucket '{destination_bucket}'."
+                            f"Uploaded '{file_path}' to '{s3_key}' in bucket '{bucket}'."
                         )
         else:
-            dest_file_path = f"{parent_folder.rsplit('/', 1)[0]}/{item_id}/{obj['Key']}"
-            source = {"Bucket": source_bucket, "Key": obj["Key"]}
-            dest = s3_resource.Bucket(destination_bucket)
+            dest_file_path = (
+                f"planet/{item_id}/{obj['Key'].replace(parent_folder + '/', '')}"
+            )
+            source = {"Bucket": bucket, "Key": obj["Key"]}
+            dest = s3_resource.Bucket(bucket)
             dest.copy(source, dest_file_path)
             file_name = obj["Key"]
             logging.info(
-                f"Uploaded '{file_name}' to '{dest_file_path}' in bucket '{destination_bucket}'."
+                f"Uploaded '{file_name}' to '{dest_file_path}' in bucket '{bucket}'."
             )
 
 

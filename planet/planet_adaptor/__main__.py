@@ -1,7 +1,9 @@
 import asyncio
+import glob
 import json
 import logging
 import mimetypes
+import os
 import sys
 from enum import Enum
 
@@ -12,6 +14,7 @@ from planet_adaptor.api_utils import (
     submit_order,
 )
 from planet_adaptor.s3_utils import (
+    download_data,
     list_objects_in_folder,
     poll_s3_for_data,
     retrieve_stac_item,
@@ -70,17 +73,19 @@ def send_pulsar_message(bucket: str, key: str):
 
 
 def update_stac_item_success(
-    bucket: str, key: str, parent_folder: str, item_id: str, workspaces_domain: str
+    bucket: str, key: str, folder: str, item_id: str, workspaces_domain: str
 ):
     """Update the STAC item with the assets and success order status"""
     stac_item = retrieve_stac_item(bucket, key)
+    stac_item["assets"] = {}
     # List files and folders in the specified folder
-    folder_prefix = f"{parent_folder}/{item_id}/"
+    folder_prefix = f"{folder}/"
     folder_objects = list_objects_in_folder(bucket, folder_prefix)
 
     # Add all listed objects as assets to the STAC item
     if "Contents" in folder_objects:
         for obj in folder_objects["Contents"]:
+
             file_key = obj["Key"]
 
             # Skip if the file_key is a folder
@@ -94,12 +99,10 @@ def update_stac_item_success(
             if mime_type is None:
                 mime_type = "application/octet-stream"  # Default MIME type
 
-            # Add asset link to the file
-            parts = file_key.split("/", 1)
-            workspace = parts[0]
-            file_subpath = parts[1]
+            downloaded_file_name = download_data(bucket, file_key, asset_name)
+
             stac_item["assets"][asset_name] = {
-                "href": f"https://{workspace}.{workspaces_domain}/files/{bucket}/{file_subpath}",
+                "href": downloaded_file_name,  # f"https://{workspace}.{workspaces_domain}/files/{bucket}/{file_subpath}",
                 "type": mime_type,
             }
     # Mark the order as succeeded and upload the updated STAC item
@@ -109,6 +112,10 @@ def update_stac_item_success(
 
     # Create local record of the order, to be used as the workflow output
     write_stac_item_and_catalog(stac_item, key.split("/")[-1], item_id)
+
+    # Adding this for debugging purposes later on, just in case
+    logging.info(f"Files in current working directory: {os.getcwd()}")
+    logging.info(list(glob.iglob("./**/*", recursive=True)))
 
 
 def update_stac_item_failure(bucket: str, key: str, item_id: str):
@@ -153,14 +160,16 @@ def get_credentials() -> dict:
     }
 
 
-def main(stac_key: str, workspace_bucket: str, workspace_domain: str):
+def main(
+    stac_key: str, workspace_bucket: str, workspace_domain: str, product_bundle: str
+):
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
-    stac_parent_folder = "/".join(stac_key.split("/")[:-1])
-    planet_data_bucket = "commercial-planet-data"
+    logging.info(f"Retrieving STAC item {stac_key} from bucket {workspace_bucket}")
+
     try:
         # Submit an order for the given STAC item
-        logging.info(f"Retrieving STAC item {stac_key} from bucket {workspace_bucket}")
+        logging.info(f"Identified item as {stac_key} in {workspace_bucket}")
         stac_item = retrieve_stac_item(workspace_bucket, stac_key)
 
         item_id, collection_id = get_id_and_collection_from_stac(stac_item, stac_key)
@@ -168,6 +177,7 @@ def main(stac_key: str, workspace_bucket: str, workspace_domain: str):
         logging.info(f"Preparing to submit order for {item_id} in {collection_id}")
 
         order = asyncio.run(get_existing_order_details(item_id))
+        logging.info(f"Existing order: {order}")
 
         order_status = order.get("state")
         logging.info(f"Order status: {order_status}")
@@ -180,9 +190,9 @@ def main(stac_key: str, workspace_bucket: str, workspace_domain: str):
         if not order_status == "success":
             credentials = get_credentials()
 
-            delivery_request = define_delivery(credentials, planet_data_bucket)
+            delivery_request = define_delivery(credentials, workspace_bucket)
             order_request = create_order_request(
-                item_id, collection_id, delivery_request
+                item_id, collection_id, delivery_request, product_bundle
             )
 
             asyncio.run(submit_order(order_request))
@@ -197,16 +207,18 @@ def main(stac_key: str, workspace_bucket: str, workspace_domain: str):
         update_stac_item_failure(workspace_bucket, stac_key, None)
         return
 
+    staging_folder = f"planet/commercial-data/{order_id}"
+    output_folder = f"planet/{item_id}"
+
     try:
         # Wait for data from planet to arrive, then move it to the workspace
         poll_s3_for_data(
-            source_bucket=planet_data_bucket, order_id=order_id, item_id=item_id
+            source_bucket=workspace_bucket, order_id=order_id, item_id=item_id
         )
 
         unzip_and_upload_to_s3(
-            "commercial-planet-data",
             workspace_bucket,
-            f"{stac_parent_folder}/{order_id}",
+            staging_folder,
             order_id,
             item_id,
         )
@@ -215,9 +227,9 @@ def main(stac_key: str, workspace_bucket: str, workspace_domain: str):
         update_stac_item_failure(workspace_bucket, stac_key, item_id)
         return
     update_stac_item_success(
-        workspace_bucket, stac_key, stac_parent_folder, item_id, workspace_domain
+        workspace_bucket, stac_key, output_folder, item_id, workspace_domain
     )
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3])
+    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])

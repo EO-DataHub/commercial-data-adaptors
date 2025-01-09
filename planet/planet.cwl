@@ -23,6 +23,10 @@ $graph:
         label: domain for the EODH workspace environment within which the data is stored
         doc: domain for the EODH workspace environment within which the data is stored
         type: string
+      product_bundle:
+        label: Product bundles comprise of a group of assets for an item. In the Planet API, an item is an entry in the catalog, and generally represents a single logical observation (or scene) captured by a satellite. Each item is defined by an item_type, which represents the class of spacecraft and/or processing level of the item
+        doc: Product bundles comprise of a group of assets for an item. In the Planet API, an item is an entry in the catalog, and generally represents a single logical observation (or scene) captured by a satellite. Each item is defined by an item_type, which represents the class of spacecraft and/or processing level of the item
+        type: string
     outputs:
       - id: results
         type: Directory
@@ -35,6 +39,7 @@ $graph:
           stac_key: stac_key
           workspace_bucket: workspace_bucket
           workspace_domain: workspace_domain
+          product_bundle: product_bundle
         out:
           - results
   # convert.sh - takes input args `--url`
@@ -46,6 +51,7 @@ $graph:
     baseCommand: ["python", "-m", "planet_adaptor"]
     inputs:
       stac_key:
+        #type: Directory
         type: string
         inputBinding:
           position: 1
@@ -57,6 +63,10 @@ $graph:
         type: string
         inputBinding:
           position: 3
+      product_bundle:
+        type: string
+        inputBinding:
+          position: 4
 
     outputs:
       results:
