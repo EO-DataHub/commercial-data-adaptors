@@ -20,7 +20,6 @@ class PollingTimeoutError(Exception):
 def poll_s3_for_data(
     source_bucket: str,
     order_id: str,
-    item_id: str,
     polling_interval: int = 60,
     timeout: int = 86400,
 ) -> dict:
@@ -45,7 +44,7 @@ def poll_s3_for_data(
         # Check for timeout
         if time.time() > end_time:
             raise PollingTimeoutError(
-                f"Timeout reached while polling for {item_id} in bucket {source_bucket} after {timeout} seconds."
+                f"Timeout reached while polling for {order_id} in bucket {source_bucket} after {timeout} seconds."
             )
 
         # Wait for the specified interval before checking again

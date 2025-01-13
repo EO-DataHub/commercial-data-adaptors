@@ -212,9 +212,7 @@ def main(
 
     try:
         # Wait for data from planet to arrive, then move it to the workspace
-        poll_s3_for_data(
-            source_bucket=workspace_bucket, order_id=order_id, item_id=item_id
-        )
+        poll_s3_for_data(source_bucket=workspace_bucket, order_id=order_id)
 
         unzip_and_upload_to_s3(
             workspace_bucket,
