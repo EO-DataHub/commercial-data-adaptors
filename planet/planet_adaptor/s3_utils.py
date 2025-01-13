@@ -56,7 +56,7 @@ def download_data(
     bucket: str,
     key: str,
     file_name: str,
-) -> dict:
+) -> str:
     """Download the data and save locally"""
 
     logging.info(f"Downloading from {bucket}/{key} and saving as {file_name}")

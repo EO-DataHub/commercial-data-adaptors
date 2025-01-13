@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Tuple
 
 
 def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, item_id: str):
@@ -58,12 +59,12 @@ def update_stac_order_status(stac_item: dict, item_id: str, order_status: str):
         stac_item["stac_extensions"].append(order_extension_url)
 
 
-def get_id_and_collection_from_stac(stac_item: dict, key: str) -> str:
+def get_id_and_collection_from_stac(stac_item: dict, key: str) -> Tuple[str, str]:
     """Extract the acquisition ID from a STAC item"""
-    collection = stac_item.get("properties", {}).get("item_type")
+    collection_id = stac_item.get("properties", {}).get("item_type")
     item_id = stac_item.get("id")
     if not item_id:
         raise ValueError(f"Item ID not found in STAC item '{key}'.")
-    if not collection:
+    if not collection_id:
         raise ValueError(f"Collection not found in STAC item '{key}'.")
-    return item_id, collection
+    return item_id, collection_id
