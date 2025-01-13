@@ -118,7 +118,7 @@ def update_stac_item_success(
     logging.info(list(glob.iglob("./**/*", recursive=True)))
 
 
-def update_stac_item_failure(bucket: str, key: str, item_id: str):
+def update_stac_item_failure(bucket: str, key: str, item_id: str) -> None:
     """Update the STAC item with the failure order status"""
     stac_item = retrieve_stac_item(bucket, key)
 
@@ -131,7 +131,7 @@ def update_stac_item_failure(bucket: str, key: str, item_id: str):
     write_stac_item_and_catalog(stac_item, key.split("/")[-1], item_id)
 
 
-async def get_existing_order_details(item_id):
+async def get_existing_order_details(item_id) -> dict:
     planet_api_key = get_api_key_from_secret("api-keys", "planet-key")
     auth = planet.Auth.from_key(planet_api_key)
 
@@ -162,7 +162,7 @@ def get_credentials() -> dict:
 
 def main(
     stac_key: str, workspace_bucket: str, workspace_domain: str, product_bundle: str
-):
+) -> None:
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
     logging.info(f"Retrieving STAC item {stac_key} from bucket {workspace_bucket}")

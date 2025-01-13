@@ -70,7 +70,7 @@ def unzip_and_upload_to_s3(
     parent_folder: str,
     order_id: str,
     item_id: str,
-):
+) -> None:
     """Unzip the contents of a .zip file from S3 and upload them"""
 
     response = s3_client.list_objects_v2(Bucket=bucket, Prefix=parent_folder)
@@ -131,7 +131,7 @@ def list_objects_in_folder(bucket: str, folder_prefix: str) -> dict:
     return s3_client.list_objects_v2(Bucket=bucket, Prefix=folder_prefix)
 
 
-def upload_stac_item(bucket: str, key: str, stac_item: dict):
+def upload_stac_item(bucket: str, key: str, stac_item: dict) -> None:
     """Upload a STAC item to an S3 bucket"""
     s3_client.put_object(Bucket=bucket, Key=key, Body=json.dumps(stac_item))
     logging.info(f"Uploaded STAC item {key} to bucket {bucket}")

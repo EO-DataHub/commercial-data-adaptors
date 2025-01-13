@@ -52,7 +52,7 @@ def create_order_request(
     return order
 
 
-async def submit_order(order_details) -> str:
+async def submit_order(order_details: dict) -> str:
     """Submit an order for Planet data"""
     planet_api_key = get_api_key_from_secret("api-keys", "planet-key")
     auth = planet.Auth.from_key(planet_api_key)
