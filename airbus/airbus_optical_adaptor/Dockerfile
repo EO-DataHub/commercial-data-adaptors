@@ -10,6 +10,6 @@ WORKDIR /app
 COPY ../requirements.txt /app
 RUN python -m pip install -r requirements.txt 
 
-COPY ../common .
-COPY ../airbus_optical_adaptor .
+COPY ../common /app/common
+COPY ../airbus_optical_adaptor /app/airbus_optical_adaptor
 ENTRYPOINT ["python", "-m", "airbus_optical_adaptor"]
