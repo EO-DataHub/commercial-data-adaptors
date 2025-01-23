@@ -1,4 +1,5 @@
 import logging
+import requests
 
 
 from common.auth_utils import generate_access_token
@@ -93,9 +94,7 @@ def post_submit_order(
 
     logging.info(f"Sending POST request to submit an order with {request_body}")
 
-    # TODO: Uncomment this line to submit the order
-    # response = requests.post(url, json=request_body, headers=headers)
-    return "placeholder"
+    response = requests.post(url, json=request_body, headers=headers)
     response.raise_for_status()
 
     body = response.json()

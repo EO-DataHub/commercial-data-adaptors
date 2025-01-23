@@ -24,5 +24,4 @@ def send_pulsar_message(bucket: str, key: str):
         producer_name=f"airbus-sar-adaptor-{workspace}-{file_id}",
         chunking_enabled=True,
     )
-    # TODO: add after testing
-    # producer.send((json.dumps(output_data)).encode("utf-8"))
+    producer.send((json.dumps(output_data)).encode("utf-8"))
