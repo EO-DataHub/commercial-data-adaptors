@@ -2,16 +2,12 @@ import logging
 import sys
 
 from airbus_optical_adaptor.api_utils import post_submit_order
-from common.s3_utils import (
-    poll_s3_for_data,
-    retrieve_stac_item,
-    unzip_and_upload_to_s3,
-)
+from common.s3_utils import poll_s3_for_data, retrieve_stac_item, unzip_and_upload_to_s3
 from common.stac_utils import (
+    OrderStatus,
     get_key_from_stac,
     update_stac_item_failure,
     update_stac_item_success,
-    OrderStatus,
 )
 
 logging.basicConfig(
