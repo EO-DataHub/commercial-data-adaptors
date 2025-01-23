@@ -1,7 +1,6 @@
 import logging
 
 import requests
-
 from common.auth_utils import generate_access_token
 
 
