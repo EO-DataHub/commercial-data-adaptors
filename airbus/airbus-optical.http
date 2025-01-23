@@ -1,0 +1,103 @@
+## Before attempting to run please provide your API Token in the following variable. You can generate this from the Hub website: https://test.eodatahub.org.uk/workspaces/
+# AIRBUS
+@apiToken=<apiToken>
+
+@scheme = https
+@ades=dev.eodatahub.org.uk/ades
+@username=airbus
+@workspace = apalmer-tpzuk
+@stacKey = airbus/commercial-data/collections/airbus_pneo_data/items/ACQ_PNEO3_05300415120321.json
+@workspaceBucket = workspaces-eodhp-dev
+@workspaceDomain = workspaces.dev.eodhp.eco-ke-staging.com
+@env = prod
+
+@deployStatus = {{deployProcessJson.response.headers.Location}}
+@executeStatus = {{executeProcess.response.headers.Location}}
+
+###
+
+# @name deleteProcess
+DELETE {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor HTTP/1.1
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+
+###
+
+
+# @name listProcesses
+GET {{scheme}}://{{ades}}/{{username}}/ogc-api/processes HTTP/1.1
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+
+###
+
+# @name deployProcessJson
+POST {{scheme}}://{{ades}}/{{username}}/ogc-api/processes HTTP/1.1
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+Content-Type: application/cwl+yaml
+
+< airbus-optical.cwl
+
+###
+
+# @name getDeployStatus
+GET {{deployStatus}} HTTP/1.1
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+
+###
+
+# @name getProcessDetails
+GET {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor HTTP/1.1
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+
+###
+
+# @name executeProcess
+POST {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor/execution HTTP/1.1
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+Content-Type: application/json
+Prefer: respond-async
+
+{
+  "inputs": {
+    "workspace": "{{workspace}}",
+    "stac_key": "{{stacKey}}",
+    "workspace_bucket":  "{{workspaceBucket}}",
+    "workspace_domain":  "{{workspaceDomain}}",
+    "env": "{{env}}"
+  }
+}
+
+###
+
+# @name getExecuteStatus
+GET {{executeStatus}} HTTP/1.1
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+
+###
+
+# @name getProcessingResults
+GET {{executeStatus}}/results HTTP/1.1
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+
+###
+
+# @name undeployProcess
+DELETE {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor HTTP/1.1
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+
+###
+
+# @name listJobs
+GET {{scheme}}://{{ades}}/{{username}}/ogc-api/jobs HTTP/1.1
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+
+###
