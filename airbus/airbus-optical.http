@@ -1,8 +1,6 @@
 ## Before attempting to run please provide your API Token in the following variable. You can generate this from the Hub website: https://test.eodatahub.org.uk/workspaces/
 # AIRBUS
-@apiToken=454f4448d017ce14b1ced4dfa951105e
-# APALMER
-@apiToken=454f4448c8a1377298e3784eb5dea93f
+@apiToken=<apiToken>
 
 @scheme = https
 @ades=dev.eodatahub.org.uk/ades
