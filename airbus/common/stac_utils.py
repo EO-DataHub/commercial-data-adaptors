@@ -2,8 +2,9 @@ import json
 import logging
 import mimetypes
 from enum import Enum
+
 from common.pulsar_utils import send_pulsar_message
-from common.s3_utils import retrieve_stac_item, upload_stac_item, list_objects_in_folder
+from common.s3_utils import list_objects_in_folder, retrieve_stac_item, upload_stac_item
 
 
 class OrderStatus(Enum):

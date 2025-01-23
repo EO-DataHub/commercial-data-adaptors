@@ -44,7 +44,7 @@ def main(stac_key: str, workspace_bucket: str, workspace_domain: str, env="dev")
                 multi_stac_item = retrieve_stac_item(
                     workspace_bucket, f"{stac_parent_folder}/{multi_acquisition_id}"
                 )
-                item_uuids.append(get_key_from_stac(multi_stac_item, f"properties.id"))
+                item_uuids.append(get_key_from_stac(multi_stac_item, "properties.id"))
         if get_key_from_stac(stac_item, "order.status") == OrderStatus.ORDERED.value:
             logging.info(f"Order for {acquisition_id} is already in progress")
             # Unable to obtain the item_id again, so cannot wait for data. Fail the order.

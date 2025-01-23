@@ -1,4 +1,6 @@
+import json
 import logging
+
 from pulsar import Client as PulsarClient
 
 
