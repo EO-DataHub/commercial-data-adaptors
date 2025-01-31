@@ -16,7 +16,7 @@ logging.basicConfig(
 )
 
 
-def main(stac_key: str, workspace_bucket: str, workspace_domain: str, env="dev"):
+def main(stac_key: str, workspace_bucket: str, workspace_domain: str, pulsar_url: str, env="dev"):
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
     stac_parent_folder = "/".join(stac_key.split("/")[:-1])
@@ -49,9 +49,9 @@ def main(stac_key: str, workspace_bucket: str, workspace_domain: str, env="dev")
         update_stac_item_failure(workspace_bucket, stac_key, item_id)
         return
     update_stac_item_success(
-        workspace_bucket, stac_key, stac_parent_folder, item_id, workspace_domain
+        workspace_bucket, stac_key, stac_parent_folder, item_id, workspace_domain, pulsar_url
     )
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[5], sys.argv[4])

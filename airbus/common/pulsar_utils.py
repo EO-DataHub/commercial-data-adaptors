@@ -4,7 +4,7 @@ import logging
 from pulsar import Client as PulsarClient
 
 
-def send_pulsar_message(bucket: str, key: str):
+def send_pulsar_message(bucket: str, key: str, pulsar_url: str):
     """Send a Pulsar message to indicate an update to the item"""
     parts = key.split("/")
     workspace = parts[0]
@@ -20,7 +20,7 @@ def send_pulsar_message(bucket: str, key: str):
         "target": f"user-datasets/{workspace}",
     }
     logging.info(f"Sending message to pulsar: {output_data}")
-    pulsar_client = PulsarClient("pulsar://pulsar-broker.pulsar:6650")
+    pulsar_client = PulsarClient(pulsar_url)
     producer = pulsar_client.create_producer(
         topic="harvested",
         producer_name=f"airbus-sar-adaptor-{workspace}-{file_id}",

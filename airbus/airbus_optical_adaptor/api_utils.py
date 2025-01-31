@@ -10,12 +10,6 @@ def post_submit_order(
     """Submit an order for an optical acquisition via POST request"""
     url = "https://order.api.oneatlas.airbus.com/api/v1/orders"
 
-    access_token = generate_access_token()
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json",
-    }
-
     spectral_processing = "bundle"
     if collection_id == "airbus_pneo_data":
         product_type = "PleiadesNeoArchiveMono"
@@ -92,6 +86,14 @@ def post_submit_order(
         request_body["items"][0]["datastripIds"] = [item_id]
 
     logging.info(f"Sending POST request to submit an order with {request_body}")
+
+    return "placeholder"
+
+    access_token = generate_access_token()
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+    }
 
     response = requests.post(url, json=request_body, headers=headers)
     response.raise_for_status()

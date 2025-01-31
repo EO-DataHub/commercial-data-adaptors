@@ -1,15 +1,15 @@
 ## Before attempting to run please provide your API Token in the following variable. You can generate this from the Hub website: https://test.eodatahub.org.uk/workspaces/
 # AIRBUS
-@apiToken=<apiToken>
+@apiToken=454f444858eb8c06be8a2fb250b5b28b
+# APALMER
+@apiToken=454f4448f23ccafcf549cf38e3f55dea
 
 @scheme = https
 @ades=dev.eodatahub.org.uk/ades
 @username=airbus
 @workspace = apalmer-tpzuk
-@stacKey = airbus/commercial-data/collections/airbus_pneo_data/items/ACQ_PNEO3_05300415120321.json
-@workspaceBucket = workspaces-eodhp-dev
-@workspaceDomain = workspaces.dev.eodhp.eco-ke-staging.com
-@env = prod
+@stacKey = s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_pneo_data/items/ACQ_PNEO3_05300415120321.json
+@stacKey = [s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_pneo_data/items/ACQ_CP_PNEO3_052307_0015052955_ST_0-27.json, s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_pneo_data/items/ACQ_PNEO3_05230715052955.json]
 
 @deployStatus = {{deployProcessJson.response.headers.Location}}
 @executeStatus = {{executeProcess.response.headers.Location}}
@@ -65,10 +65,7 @@ Prefer: respond-async
 {
   "inputs": {
     "workspace": "{{workspace}}",
-    "stac_key": "{{stacKey}}",
-    "workspace_bucket":  "{{workspaceBucket}}",
-    "workspace_domain":  "{{workspaceDomain}}",
-    "env": "{{env}}"
+    "stac_key": "{{stacKey}}"
   }
 }
 

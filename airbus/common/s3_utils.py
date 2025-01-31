@@ -42,42 +42,35 @@ def poll_s3_for_data(
         # Wait for the specified interval before checking again
         time.sleep(polling_interval)
 
-
-def unzip_and_upload_to_s3(
-    source_bucket: str, destination_bucket: str, parent_folder: str, obj: dict
+def download_and_store_locally(
+    source_bucket: str, obj: dict, destination_folder: str
 ):
-    """Unzip the contents of a .tar.gz file from S3 and upload them to a different S3 bucket"""
-    # Create a temporary directory to store the downloaded and extracted files
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # Download the .tar.gz file to the temporary directory
-        tar_gz_path = os.path.join(tmpdir, os.path.basename(obj["Key"]))
-        s3.download_file(source_bucket, obj["Key"], tar_gz_path)
-        logging.info(
-            f"Downloaded '{obj['Key']}' from bucket '{source_bucket}' to '{tar_gz_path}'."
-        )
+    """Unzip the contents of a .tar.gz file from S3 and store them locally in a specified folder"""
+    # Create the destination folder if it doesn't exist
+    if not os.path.exists(destination_folder):
+        os.makedirs(destination_folder)
 
-        # Extract the contents of the .tar.gz file
-        with tarfile.open(tar_gz_path, "r:gz") as tar:
-            tar.extractall(path=tmpdir)
-            logging.info(f"Extracted '{obj['Key']}' to '{tmpdir}'.")
+    # Download the .tar.gz file to the destination folder
+    tar_gz_path = os.path.join(destination_folder, os.path.basename(obj["Key"]))
+    s3.download_file(source_bucket, obj["Key"], tar_gz_path)
+    logging.info(
+        f"Downloaded '{obj['Key']}' from bucket '{source_bucket}' to '{tar_gz_path}'."
+    )
 
-        # Upload the extracted files to the destination bucket
-        for root, _, files in os.walk(tmpdir):
-            for file in files:
-                file_path = os.path.join(root, file)
-                relative_path = os.path.relpath(file_path, tmpdir)
-                s3_key = os.path.join(parent_folder, relative_path)
-                s3.upload_file(file_path, destination_bucket, s3_key)
-                logging.info(
-                    f"Uploaded '{file_path}' to '{s3_key}' in bucket '{destination_bucket}'."
-                )
+    # Extract the contents of the .tar.gz file into the destination folder
+    with tarfile.open(tar_gz_path, "r:gz") as tar:
+        tar.extractall(path=destination_folder)
+        logging.info(f"Extracted '{tar_gz_path}' to '{destination_folder}'.")
 
 
-def retrieve_stac_item(bucket: str, key: str) -> dict:
-    """Retrieve a STAC item from an S3 bucket"""
-    # Retrieve the STAC item from S3
-    stac_item_obj = s3.get_object(Bucket=bucket, Key=key)
-    stac_item = json.loads(stac_item_obj["Body"].read().decode("utf-8"))
+def retrieve_stac_item(bucket: str, file_path: str) -> dict:
+    """Retrieve a STAC item from a local JSON file"""
+    # TODO: remove function
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"The file {file_path} does not exist.")
+    
+    with open(file_path, 'r', encoding='utf-8') as f:
+        stac_item = json.load(f)
     return stac_item
 
 
