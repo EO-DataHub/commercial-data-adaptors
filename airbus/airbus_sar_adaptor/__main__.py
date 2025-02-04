@@ -1,17 +1,16 @@
 import logging
-import sys
 import os
-
+import sys
 from typing import List
+
 from airbus_sar_adaptor.api_utils import is_order_in_progress, post_submit_order
-from common.s3_utils import poll_s3_for_data, retrieve_stac_item, download_and_store_locally
+from common.s3_utils import download_and_store_locally, poll_s3_for_data
 from common.stac_utils import (
-    OrderStatus,
+    get_item_hrefs_from_catalogue,
     get_key_from_stac,
     retrieve_stac_item,
     update_stac_item_failure,
     update_stac_item_success,
-    get_item_hrefs_from_catalogue,
 )
 
 logging.basicConfig(
@@ -20,8 +19,10 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
+
 class STACItem:
     """Class to represent a STAC item and its properties"""
+
     def __init__(self, stac_item_path: str):
         self.file_path = stac_item_path
         self.file_name = os.path.basename(stac_item_path)
@@ -65,7 +66,9 @@ def main(catalogue_dirs: List[str]):
             # Submit an order for the given STAC item
             logging.info(f"Ordering STAC item {stac_item.acquisition_id}")
             if is_order_in_progress(stac_item.acquisition_id):
-                logging.info(f"Order for {stac_item.acquisition_id} is already in progress")
+                logging.info(
+                    f"Order for {stac_item.acquisition_id} is already in progress"
+                )
                 update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
                 return
             order_id = post_submit_order(stac_item.acquisition_id)
@@ -88,6 +91,7 @@ def main(catalogue_dirs: List[str]):
         update_stac_item_success(
             stac_item.stac_json, stac_item.file_name, order_id, "assets"
         )
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

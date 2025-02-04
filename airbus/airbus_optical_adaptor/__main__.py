@@ -1,17 +1,17 @@
 import logging
-import sys
 import os
-
+import sys
 from typing import List
+
 from airbus_optical_adaptor.api_utils import post_submit_order
-from common.s3_utils import poll_s3_for_data, retrieve_stac_item, download_and_store_locally
+from common.s3_utils import download_and_store_locally, poll_s3_for_data
 from common.stac_utils import (
     OrderStatus,
+    get_item_hrefs_from_catalogue,
     get_key_from_stac,
     retrieve_stac_item,
     update_stac_item_failure,
     update_stac_item_success,
-    get_item_hrefs_from_catalogue,
 )
 
 logging.basicConfig(
@@ -20,8 +20,10 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
+
 class STACItem:
     """Class to represent a STAC item and its properties"""
+
     def __init__(self, stac_item_path: str):
         self.file_path = stac_item_path
         self.file_name = os.path.basename(stac_item_path)
@@ -31,9 +33,12 @@ class STACItem:
         )
         self.collection_id = get_key_from_stac(self.stac_json, "collection")
         self.coordinates = get_key_from_stac(self.stac_json, "geometry.coordinates")
-        self.multi_acquisition_ids = get_key_from_stac(
-            self.stac_json, "properties.composed_of_acquisition_identifiers"
-        ) or []
+        self.multi_acquisition_ids = (
+            get_key_from_stac(
+                self.stac_json, "properties.composed_of_acquisition_identifiers"
+            )
+            or []
+        )
         self.order_status = get_key_from_stac(self.stac_json, "order.status")
         self.item_uuids = []
 
@@ -47,7 +52,9 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
         stac_item_paths += get_item_hrefs_from_catalogue(catalogue_dir)
     if not stac_item_paths:
         raise ValueError("No STAC items found in the given directories.")
-    acquisition_id_to_path = {os.path.splitext(os.path.basename(path))[0]: path for path in stac_item_paths}
+    acquisition_id_to_path = {
+        os.path.splitext(os.path.basename(path))[0]: path for path in stac_item_paths
+    }
     logging.info(f"STAC item paths: {stac_item_paths}")
 
     stac_items = []
@@ -55,21 +62,36 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
     for stac_item_path in stac_item_paths:
         stac_item_to_add = STACItem(stac_item_path)
         # Do not add the item if it is already part of a multi-acquisition item
-        if any(stac_item_to_add.acquisition_id in stac_item.multi_acquisition_ids for stac_item in stac_items):
+        if any(
+            stac_item_to_add.acquisition_id in stac_item.multi_acquisition_ids
+            for stac_item in stac_items
+        ):
             continue
         if stac_item_to_add.multi_acquisition_ids:
-            logging.info(f"Item {stac_item_to_add.acquisition_id} is a multi-acquisition item")
-            logging.info(f"Multi-acquisition IDs: {stac_item_to_add.multi_acquisition_ids}")
+            logging.info(
+                f"Item {stac_item_to_add.acquisition_id} is a multi-acquisition item"
+            )
+            logging.info(
+                f"Multi-acquisition IDs: {stac_item_to_add.multi_acquisition_ids}"
+            )
             for multi_acquisition_id in stac_item_to_add.multi_acquisition_ids:
                 # The order is incomplete if not all multi-acquisition items are present
                 multi_stac_item_path = acquisition_id_to_path.get(multi_acquisition_id)
                 if not multi_stac_item_path:
-                    raise ValueError(f"File {multi_acquisition_id} not found in given ids: {acquisition_id_to_path}")
+                    raise ValueError(
+                        f"File {multi_acquisition_id} not found in given ids: {acquisition_id_to_path}"
+                    )
                 # Add the UUID of each item to the main multi-acquisition item
                 multi_stac_item = STACItem(multi_stac_item_path)
-                stac_item_to_add.item_uuids.append(get_key_from_stac(multi_stac_item.stac_json, "properties.id"))
+                stac_item_to_add.item_uuids.append(
+                    get_key_from_stac(multi_stac_item.stac_json, "properties.id")
+                )
             # Remove the multi-acquisition items from the list
-            stac_items = [item for item in stac_items if item.acquisition_id not in stac_item_to_add.multi_acquisition_ids]
+            stac_items = [
+                item
+                for item in stac_items
+                if item.acquisition_id not in stac_item_to_add.multi_acquisition_ids
+            ]
         stac_items.append(stac_item_to_add)
 
     return stac_items
@@ -86,12 +108,17 @@ def main(catalogue_dirs: List[str]):
             # Submit an order for the given STAC item
             logging.info(f"Ordering STAC item {stac_item.acquisition_id}")
             if stac_item.order_status == OrderStatus.ORDERED.value:
-                logging.info(f"Order for {stac_item.acquisition_id} is already in progress")
+                logging.info(
+                    f"Order for {stac_item.acquisition_id} is already in progress"
+                )
                 # Unable to obtain the item_id again, so cannot wait for data. Fail the order.
                 update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
                 return
             order_id = post_submit_order(
-                stac_item.acquisition_id, stac_item.collection_id, stac_item.coordinates, stac_item.item_uuids
+                stac_item.acquisition_id,
+                stac_item.collection_id,
+                stac_item.coordinates,
+                stac_item.item_uuids,
             )
         except Exception as e:
             logging.error(f"Failed to submit order: {e}")

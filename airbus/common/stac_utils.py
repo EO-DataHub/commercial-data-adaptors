@@ -1,7 +1,7 @@
-import os
 import json
 import logging
 import mimetypes
+import os
 from enum import Enum
 
 
@@ -19,8 +19,8 @@ def retrieve_stac_item(file_path: str) -> dict:
     """Retrieve a STAC item from a local JSON file"""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The file {file_path} does not exist.")
-    
-    with open(file_path, 'r', encoding='utf-8') as f:
+
+    with open(file_path, "r", encoding="utf-8") as f:
         stac_item = json.load(f)
     return stac_item
 
@@ -143,15 +143,15 @@ def get_item_hrefs_from_catalogue(catalogue_dir: str) -> list:
     catalog_path = os.path.join(catalogue_dir, "catalog.json")
     if not os.path.exists(catalog_path):
         raise FileNotFoundError(f"The file {catalog_path} does not exist.")
-    
-    with open(catalog_path, 'r', encoding='utf-8') as f:
+
+    with open(catalog_path, "r", encoding="utf-8") as f:
         catalog = json.load(f)
-    
+
     item_hrefs = []
-    for link in catalog.get('links', []):
-        if link.get('rel') == 'item':
-            href = link.get('href')
+    for link in catalog.get("links", []):
+        if link.get("rel") == "item":
+            href = link.get("href")
             absolute_href = os.path.normpath(os.path.join(catalogue_dir, href))
             item_hrefs.append(absolute_href)
-    
+
     return item_hrefs

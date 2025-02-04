@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import tarfile
-import tempfile
 import time
 
 import boto3
@@ -42,9 +41,8 @@ def poll_s3_for_data(
         # Wait for the specified interval before checking again
         time.sleep(polling_interval)
 
-def download_and_store_locally(
-    source_bucket: str, obj: dict, destination_folder: str
-):
+
+def download_and_store_locally(source_bucket: str, obj: dict, destination_folder: str):
     """Unzip the contents of a .tar.gz file from S3 and store them locally in a specified folder"""
     # Create the destination folder if it doesn't exist
     if not os.path.exists(destination_folder):
@@ -61,17 +59,6 @@ def download_and_store_locally(
     with tarfile.open(tar_gz_path, "r:gz") as tar:
         tar.extractall(path=destination_folder)
         logging.info(f"Extracted '{tar_gz_path}' to '{destination_folder}'.")
-
-
-def retrieve_stac_item(bucket: str, file_path: str) -> dict:
-    """Retrieve a STAC item from a local JSON file"""
-    # TODO: remove function
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"The file {file_path} does not exist.")
-    
-    with open(file_path, 'r', encoding='utf-8') as f:
-        stac_item = json.load(f)
-    return stac_item
 
 
 def list_objects_in_folder(bucket: str, folder_prefix: str) -> dict:
