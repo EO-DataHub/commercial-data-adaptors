@@ -17,7 +17,7 @@
 ###
 
 # @name deleteProcess
-DELETE {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor HTTP/1.1
+DELETE {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor-multi HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
@@ -37,7 +37,7 @@ Authorization: Bearer {{apiToken}}
 Accept: application/json
 Content-Type: application/cwl+yaml
 
-< airbus-optical.cwl
+< airbus-optical-multi.cwl
 
 ###
 
@@ -49,14 +49,14 @@ Accept: application/json
 ###
 
 # @name getProcessDetails
-GET {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor HTTP/1.1
+GET {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor-multi HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
 ###
 
 # @name executeProcess
-POST {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor/execution HTTP/1.1
+POST {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor-multi/execution HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 Content-Type: application/json
@@ -65,7 +65,11 @@ Prefer: respond-async
 {
   "inputs": {
     "workspace": "{{workspace}}",
-    "stac_key": "s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_pneo_data/items/ACQ_PNEO3_05300415120321.json"
+    "stac_keys": [
+      "s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_pneo_data/items/ACQ_CP_PNEO3_052307_0015052955_ST_0-27.json",
+      "s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_pneo_data/items/ACQ_PNEO3_05230715052955.json",
+      "s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_pneo_data/items/ACQ_PNEO3_05230715052956.json"
+    ]
   }
 }
 
@@ -86,7 +90,7 @@ Accept: application/json
 ###
 
 # @name undeployProcess
-DELETE {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor HTTP/1.1
+DELETE {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor-multi HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 

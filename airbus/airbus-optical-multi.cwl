@@ -7,14 +7,14 @@ schemas:
 $graph:
   # Workflow entrypoint
   - class: Workflow
-    id: airbus-optical-adaptor
-    label: Airbus Optical Adaptor
-    doc: Order and load data from the Airbus optical catalogue into a workspace
+    id: airbus-optical-adaptor-multi
+    label: Airbus Optical Adaptor Multi
+    doc: Order and load multiple data items from the Airbus optical catalogue into a workspace
     inputs:
-      stac_key:
-        label: path to stac item in s3 describing data to order and download
-        doc: path to stac item in s3 describing data to order and download
-        type: Directory
+      stac_keys:
+        label: paths to stac item in s3 describing data to order and download
+        doc: paths to stac item in s3 describing data to order and download
+        type: Directory[]
     outputs:
       - id: results
         type: Directory
@@ -24,7 +24,7 @@ $graph:
       airbus-optical-adaptor:
         run: "#airbus-optical-adaptor"
         in:
-          stac_key: stac_key
+          stac_keys: stac_keys
         out:
           - results
   # convert.sh - takes input args `--url`
@@ -35,8 +35,8 @@ $graph:
         dockerPull: public.ecr.aws/n1b3o1k2/airbus-optical-adaptor:0.0.1-rc21
     baseCommand: ["python", "-m", "airbus_optical_adaptor"]
     inputs:
-      stac_key:
-        type: Directory
+      stac_keys:
+        type: Directory[]
         inputBinding:
           position: 1
 

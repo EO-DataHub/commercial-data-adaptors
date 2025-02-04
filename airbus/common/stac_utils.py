@@ -96,7 +96,7 @@ def get_key_from_stac(stac_item: dict, key: str):
     for part in parts:
         value = value.get(part)
         if value is None:
-            logging.error(f"{part} not found in STAC item.")
+            logging.info(f"{part} not found in STAC item.")
             return None
     logging.info(f"Retrieved {key} from STAC item: {value}")
     return value

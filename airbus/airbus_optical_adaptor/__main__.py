@@ -1,6 +1,7 @@
 import logging
 import sys
 import os
+import time
 
 from typing import List
 from airbus_optical_adaptor.api_utils import post_submit_order
@@ -38,10 +39,16 @@ class STACItem:
         self.item_uuids = []
 
 
-def prepare_stac_items_to_order(catalogue_dir: str) -> List[STACItem]:
+def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
     """Prepare a list of STAC items to order, including multi-acquisition items"""
-    stac_item_paths = get_item_hrefs_from_catalogue(catalogue_dir)
-    acquisition_ids = {os.path.splitext(os.path.basename(path))[0] for path in stac_item_paths}
+    stac_item_paths = []
+    for catalogue_dir in catalogue_dirs:
+        if not os.path.exists(catalogue_dir):
+            raise FileNotFoundError(f"Catalogue directory {catalogue_dir} not found.")
+        stac_item_paths += get_item_hrefs_from_catalogue(catalogue_dir)
+    if not stac_item_paths:
+        raise ValueError("No STAC items found in the given directories.")
+    acquisition_id_to_path = {os.path.splitext(os.path.basename(path))[0]: path for path in stac_item_paths}
     logging.info(f"STAC item paths: {stac_item_paths}")
 
     stac_items = []
@@ -56,10 +63,11 @@ def prepare_stac_items_to_order(catalogue_dir: str) -> List[STACItem]:
             logging.info(f"Multi-acquisition IDs: {stac_item_to_add.multi_acquisition_ids}")
             for multi_acquisition_id in stac_item_to_add.multi_acquisition_ids:
                 # The order is incomplete if not all multi-acquisition items are present
-                if multi_acquisition_id not in acquisition_ids:
-                    raise ValueError(f"File {multi_acquisition_id} not found in given ids: {acquisition_ids}")
+                multi_stac_item_path = acquisition_id_to_path.get(multi_acquisition_id)
+                if not multi_stac_item_path:
+                    raise ValueError(f"File {multi_acquisition_id} not found in given ids: {acquisition_id_to_path}")
                 # Add the UUID of each item to the main multi-acquisition item
-                multi_stac_item = STACItem(multi_acquisition_id)
+                multi_stac_item = STACItem(multi_stac_item_path)
                 stac_item_to_add.item_uuids.append(get_key_from_stac(multi_stac_item.stac_json, "properties.id"))
             # Remove the multi-acquisition items from the list
             stac_items = [item for item in stac_items if item.acquisition_id not in stac_item_to_add.multi_acquisition_ids]
@@ -68,10 +76,11 @@ def prepare_stac_items_to_order(catalogue_dir: str) -> List[STACItem]:
     return stac_items
 
 
-def main(catalogue_dir: str):
+def main(catalogue_dirs: List[str]):
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
-    stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dir)
+    logging.info(catalogue_dirs)
+    stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
 
     for stac_item in stac_items:
         try:
@@ -107,4 +116,4 @@ def main(catalogue_dir: str):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1:])
