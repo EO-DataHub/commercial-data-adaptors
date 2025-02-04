@@ -1,7 +1,6 @@
 import logging
 import sys
 import os
-import time
 
 from typing import List
 from airbus_optical_adaptor.api_utils import post_submit_order

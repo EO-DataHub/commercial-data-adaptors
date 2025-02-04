@@ -4,7 +4,7 @@ import requests
 from common.auth_utils import generate_access_token
 
 
-def post_submit_order(acquisition_id: str, env: str = "dev") -> str:
+def post_submit_order(acquisition_id: str, env: str = "prod") -> str:
     """Submit an order for a SAR acquisition via POST request"""
     if env == "prod":
         url = "https://sar.api.oneatlas.airbus.com"
@@ -44,7 +44,7 @@ def post_submit_order(acquisition_id: str, env: str = "dev") -> str:
     return None
 
 
-def post_cancel_order(item_id: str, env: str = "dev"):
+def post_cancel_order(item_id: str, env: str = "prod"):
     """Cancel an order for a SAR acquisition via POST request"""
     if env == "prod":
         url = "https://sar.api.oneatlas.airbus.com"
@@ -68,7 +68,7 @@ def post_cancel_order(item_id: str, env: str = "dev"):
     logging.info(f"Order canceled: {body}")
 
 
-def post_items_status(env: str = "dev") -> dict:
+def post_items_status(env: str = "prod") -> dict:
     """Query the status of all orders via POST request"""
     if env == "prod":
         url = "https://sar.api.oneatlas.airbus.com"
@@ -95,7 +95,7 @@ def post_items_status(env: str = "dev") -> dict:
     return body
 
 
-def is_order_in_progress(acquisition_id: str, env: str = "dev") -> bool:
+def is_order_in_progress(acquisition_id: str, env: str = "prod") -> bool:
     """Check if an order for a SAR acquisition is in progress"""
     status = post_items_status(env)
     for feature in status:
@@ -105,7 +105,7 @@ def is_order_in_progress(acquisition_id: str, env: str = "dev") -> bool:
     return False
 
 
-def get_order_templates(env: str = "dev") -> dict:
+def get_order_templates(env: str = "prod") -> dict:
     """Retrieve all available order templates via GET request"""
     if env == "prod":
         url = "https://sar.api.oneatlas.airbus.com"
