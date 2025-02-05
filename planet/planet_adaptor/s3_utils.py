@@ -64,6 +64,31 @@ def download_data(
     return file_name
 
 
+def download_and_store_locally(source_bucket: str, parent_folder: str, destination_folder: str):
+    """Unzip the contents of a .zip file from S3 and store them locally in a specified folder"""
+    # Create the destination folder if it doesn't exist
+    if not os.path.exists(destination_folder):
+        os.makedirs(destination_folder)
+
+    response = s3_client.list_objects_v2(Bucket=source_bucket, Prefix=parent_folder)
+
+    for obj in response.get("Contents", []):
+        logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
+        destination_file_path = os.path.join(destination_folder, os.path.basename(obj["Key"]))
+        s3_client.download_file(source_bucket, obj["Key"], destination_file_path)
+        logging.info(
+            f"Downloaded '{obj['Key']}' from bucket '{source_bucket}' to '{destination_file_path}'."
+        )
+
+        if obj["Key"].endswith(".zip"):
+            logging.info("Zip file found. Unzipping...")
+            
+            # Extract the contents of the .zip file
+            with zipfile.ZipFile(destination_file_path) as z:
+                z.extractall(path=destination_folder)
+                logging.info(f"Extracted '{obj['Key']}' to '{destination_folder}'.")
+
+
 def unzip_and_upload_to_s3(
     bucket: str,
     parent_folder: str,
@@ -117,11 +142,13 @@ def unzip_and_upload_to_s3(
             )
 
 
-def retrieve_stac_item(bucket: str, key: str) -> dict:
-    """Retrieve a STAC item from an S3 bucket"""
-    # Retrieve the STAC item from S3
-    stac_item_obj = s3_client.get_object(Bucket=bucket, Key=key)
-    stac_item = json.loads(stac_item_obj["Body"].read().decode("utf-8"))
+def retrieve_stac_item(file_path: str) -> dict:
+    """Retrieve a STAC item from a local JSON file"""
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"The file {file_path} does not exist.")
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        stac_item = json.load(f)
     return stac_item
 
 

@@ -102,9 +102,9 @@ def get_key_from_stac(stac_item: dict, key: str):
     return value
 
 
-def update_stac_item_failure(stac_item: dict, file_name: str, order_id: str = None):
+def update_stac_item_failure(stac_item: dict, file_name: str, order_id: str = None) -> None:
     """Update the STAC item with the failure order status"""
-    # Mark the order as failed and upload the updated STAC item
+    # Mark the order as failed in the local STAC item
     update_stac_order_status(stac_item, order_id, OrderStatus.FAILED.value)
 
     # Create local record of attempted order, to be used as the workflow output
@@ -117,18 +117,18 @@ def update_stac_item_success(
     """Update the STAC item with the assets and success order status"""
     # Add all files in the directory as assets to the STAC item
     for root, _, files in os.walk(directory):
-        for file in files:
-            file_path = os.path.join(root, file)
-            asset_name = os.path.basename(file_path)
+        for asset in files:
+            asset_path = os.path.join(root, asset)
+            asset_name = os.path.basename(asset_path)
 
             # Determine the MIME type of the file
-            mime_type, _ = mimetypes.guess_type(file_path)
+            mime_type, _ = mimetypes.guess_type(asset_path)
             if mime_type is None:
                 mime_type = "application/octet-stream"  # Default MIME type
 
             # Add asset link to the file
             stac_item["assets"][asset_name] = {
-                "href": file_path,
+                "href": asset_path,
                 "type": mime_type,
             }
     # Mark the order as succeeded and upload the updated STAC item

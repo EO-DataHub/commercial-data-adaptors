@@ -1,11 +1,13 @@
 ## Before attempting to run please provide your API Token in the following variable. You can generate this from the Hub website: https://test.eodatahub.org.uk/workspaces/
-@apiToken=<api-token>
+@apiToken=<apiToken>
 
 @scheme = https
 @ades=dev.eodatahub.org.uk/ades
 @username=airbus
 @workspace = apalmer-tpzuk
-@stacKey = apalmer-tpzuk/commercial-data/collections/airbus_sar_data/items/TDX-1_SC_S_scan_005R_80035_A12370838_22781.json
+@stacKey = s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_sar_data/items/TDX-1_SC_S_scan_005R_80035_A12370838_22781.json
+@commercialBucket = commercial-data-airbus
+@productBundle = general_use
 
 @deployStatus = {{deployProcessJson.response.headers.Location}}
 @executeStatus = {{executeProcess.response.headers.Location}}
@@ -61,6 +63,8 @@ Prefer: respond-async
 {
   "inputs": {
     "workspace": "{{workspace}}",
+    "commercial_data_bucket": "{{commercialBucket}}",
+    "product_bundle": "{{productBundle}}",
     "stac_key": "{{stacKey}}"
   }
 }

@@ -4,22 +4,16 @@ import requests
 from common.auth_utils import generate_access_token
 
 
-def post_submit_order(acquisition_id: str, env: str = "prod") -> str:
+def post_submit_order(acquisition_id: str, product_bundle: dict, env: str = "prod") -> str:
     """Submit an order for a SAR acquisition via POST request"""
     if env == "prod":
         url = "https://sar.api.oneatlas.airbus.com"
     else:
         url = "https://dev.sar.api.oneatlas.airbus.com"
 
-    access_token = generate_access_token(env)
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json",
-    }
-
     body = {
         "acquisitions": [acquisition_id],
-        "orderTemplate": "Single User License",
+        "orderTemplate": product_bundle.get("orderTemplate"),
         "orderOptions": {
             "productType": "MGD",
             "resolutionVariant": "RE",
@@ -31,6 +25,14 @@ def post_submit_order(acquisition_id: str, env: str = "prod") -> str:
     }
 
     logging.info(f"Sending POST request to submit an order with {body}")
+
+    return "placeholder" # TODO: remove
+
+    access_token = generate_access_token(env)
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+    }
 
     response = requests.post(f"{url}/v1/sar/orders/submit", json=body, headers=headers)
     response.raise_for_status()
@@ -97,6 +99,8 @@ def post_items_status(env: str = "prod") -> dict:
 
 def is_order_in_progress(acquisition_id: str, env: str = "prod") -> bool:
     """Check if an order for a SAR acquisition is in progress"""
+    # TODO: remove
+    return False
     status = post_items_status(env)
     for feature in status:
         if feature.get("acquisitionId") == acquisition_id:

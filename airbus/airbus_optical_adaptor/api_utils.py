@@ -5,7 +5,7 @@ from common.auth_utils import generate_access_token
 
 
 def post_submit_order(
-    acquisition_id: str, collection_id: str, coordinates: list, item_uuids: list = None
+    acquisition_id: str, collection_id: str, coordinates: list, order_options: dict, item_uuids: list = None
 ) -> str:
     """Submit an order for an optical acquisition via POST request"""
     url = "https://order.api.oneatlas.airbus.com/api/v1/orders"
@@ -65,7 +65,7 @@ def post_submit_order(
                     {"key": "pixel_coding", "value": "12bits"},
                     {"key": "priority", "value": "standard"},
                     {"key": "processing_level", "value": "primary"},
-                    {"key": "radiometric_processing", "value": "reflectance"},
+                    {"key": "radiometric_processing", "value": order_options.get("radiometricProcessing")},
                     {"key": "spectral_processing", "value": spectral_processing},
                 ],
             }

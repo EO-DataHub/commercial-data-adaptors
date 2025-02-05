@@ -1,15 +1,12 @@
 ## Before attempting to run please provide your API Token in the following variable. You can generate this from the Hub website: https://test.eodatahub.org.uk/workspaces/
-# AIRBUS
 @apiToken=<apiToken>
-# APALMER
-#@apiToken=<apiToken>
 
 @scheme = https
 @ades=dev.eodatahub.org.uk/ades
 @username=airbus
 @workspace = apalmer-tpzuk
-@stacKey = s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_pneo_data/items/ACQ_PNEO3_05300415120321.json
-@stacKey = [s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_pneo_data/items/ACQ_CP_PNEO3_052307_0015052955_ST_0-27.json, s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_pneo_data/items/ACQ_PNEO3_05230715052955.json]
+@commercialBucket = commercial-data-airbus
+@productBundle = general_use
 
 @deployStatus = {{deployProcessJson.response.headers.Location}}
 @executeStatus = {{executeProcess.response.headers.Location}}
@@ -65,6 +62,8 @@ Prefer: respond-async
 {
   "inputs": {
     "workspace": "{{workspace}}",
+    "commercial_data_bucket": "{{commercialBucket}}",
+    "product_bundle": "{{productBundle}}",
     "stac_keys": [
       "s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_pneo_data/items/ACQ_CP_PNEO3_052307_0015052955_ST_0-27.json",
       "s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_pneo_data/items/ACQ_PNEO3_05230715052955.json",

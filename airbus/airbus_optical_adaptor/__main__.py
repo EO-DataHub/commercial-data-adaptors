@@ -97,10 +97,24 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
     return stac_items
 
 
-def main(catalogue_dirs: List[str]):
+def get_order_options(product_bundle: str) -> dict:
+    """Return the order options for the given product bundle"""
+    # TODO: Expand and implement different options based on product bundle
+    available_bundles = ["general_use"]
+    if product_bundle not in available_bundles:
+        raise NotImplementedError(f"Product bundle {product_bundle} is not valid. Currently implemented bundles are {available_bundles}")
+    return {
+        "productBundle": product_bundle,
+        "radiometricProcessing": "reflectance",
+    }
+
+
+def main(commercial_data_bucket: str, product_bundle: str, catalogue_dirs: List[str]):
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
-    logging.info(catalogue_dirs)
+    logging.info(f"Ordering items in catalogues from stage in: {catalogue_dirs}")
+    order_options = get_order_options(product_bundle)
+    logging.info(f"Order options: {order_options}")
     stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
 
     for stac_item in stac_items:
@@ -118,6 +132,7 @@ def main(catalogue_dirs: List[str]):
                 stac_item.acquisition_id,
                 stac_item.collection_id,
                 stac_item.coordinates,
+                order_options,
                 stac_item.item_uuids,
             )
         except Exception as e:
@@ -126,9 +141,9 @@ def main(catalogue_dirs: List[str]):
             return
         try:
             # Wait for data from airbus to arrive, then download it
-            obj = poll_s3_for_data("commercial-data-airbus", order_id)
+            obj = poll_s3_for_data(commercial_data_bucket, order_id)
             download_and_store_locally(
-                "commercial-data-airbus",
+                commercial_data_bucket,
                 obj,
                 "assets",
             )
@@ -142,4 +157,4 @@ def main(catalogue_dirs: List[str]):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main(sys.argv[1], sys.argv[2], sys.argv[3:])
