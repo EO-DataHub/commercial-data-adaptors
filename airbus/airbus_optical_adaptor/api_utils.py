@@ -94,8 +94,6 @@ def post_submit_order(
 
     logging.info(f"Sending POST request to submit an order with {request_body}")
 
-    return "placeholder"
-
     access_token = generate_access_token()
     headers = {
         "Authorization": f"Bearer {access_token}",

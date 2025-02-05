@@ -81,14 +81,6 @@ def update_stac_order_status(stac_item: dict, item_id: str, order_status: str):
         stac_item["stac_extensions"].append(order_extension_url)
 
 
-def get_acquisition_id_from_stac(stac_item: dict, key: str) -> str:
-    """Extract the acquisition ID from a STAC item"""
-    acquisition_id = stac_item.get("properties", {}).get("acquisition_id")
-    if not acquisition_id:
-        raise ValueError(f"Acquisition ID not found in STAC item '{key}'.")
-    return acquisition_id
-
-
 def get_key_from_stac(stac_item: dict, key: str):
     """Extract a nested key from a STAC item. Key given as a dot-separated string."""
     parts = key.split(".")

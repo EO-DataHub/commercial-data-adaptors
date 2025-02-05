@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import tarfile
@@ -59,14 +58,3 @@ def download_and_store_locally(source_bucket: str, obj: dict, destination_folder
     with tarfile.open(tar_gz_path, "r:gz") as tar:
         tar.extractall(path=destination_folder)
         logging.info(f"Extracted '{tar_gz_path}' to '{destination_folder}'.")
-
-
-def list_objects_in_folder(bucket: str, folder_prefix: str) -> dict:
-    """List objects in an S3 bucket with a specified folder prefix"""
-    return s3.list_objects_v2(Bucket=bucket, Prefix=folder_prefix)
-
-
-def upload_stac_item(bucket: str, key: str, stac_item: dict):
-    """Upload a STAC item to an S3 bucket"""
-    s3.put_object(Bucket=bucket, Key=key, Body=json.dumps(stac_item))
-    logging.info(f"Uploaded STAC item {key} to bucket {bucket}")
