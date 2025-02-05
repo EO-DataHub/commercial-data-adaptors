@@ -64,7 +64,9 @@ def download_data(
     return file_name
 
 
-def download_and_store_locally(source_bucket: str, parent_folder: str, destination_folder: str):
+def download_and_store_locally(
+    source_bucket: str, parent_folder: str, destination_folder: str
+):
     """Unzip the contents of a .zip file from S3 and store them locally in a specified folder"""
     # Create the destination folder if it doesn't exist
     if not os.path.exists(destination_folder):
@@ -74,7 +76,9 @@ def download_and_store_locally(source_bucket: str, parent_folder: str, destinati
 
     for obj in response.get("Contents", []):
         logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
-        destination_file_path = os.path.join(destination_folder, os.path.basename(obj["Key"]))
+        destination_file_path = os.path.join(
+            destination_folder, os.path.basename(obj["Key"])
+        )
         s3_client.download_file(source_bucket, obj["Key"], destination_file_path)
         logging.info(
             f"Downloaded '{obj['Key']}' from bucket '{source_bucket}' to '{destination_file_path}'."
@@ -82,7 +86,7 @@ def download_and_store_locally(source_bucket: str, parent_folder: str, destinati
 
         if obj["Key"].endswith(".zip"):
             logging.info("Zip file found. Unzipping...")
-            
+
             # Extract the contents of the .zip file
             with zipfile.ZipFile(destination_file_path) as z:
                 z.extractall(path=destination_folder)

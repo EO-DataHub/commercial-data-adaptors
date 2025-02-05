@@ -15,15 +15,15 @@ from planet_adaptor.api_utils import (
     submit_order,
 )
 from planet_adaptor.s3_utils import (
+    download_and_store_locally,
     poll_s3_for_data,
     retrieve_stac_item,
-    download_and_store_locally,
 )
 from planet_adaptor.stac_utils import (
-    update_stac_order_status,
-    write_stac_item_and_catalog,
     get_item_hrefs_from_catalogue,
     get_key_from_stac,
+    update_stac_order_status,
+    write_stac_item_and_catalog,
 )
 from pulsar import Client as PulsarClient
 
@@ -148,9 +148,7 @@ class STACItem:
         self.file_name = os.path.basename(stac_item_path)
         self.stac_json = retrieve_stac_item(stac_item_path)
         self.item_id = get_key_from_stac(self.stac_json, "id")
-        self.collection_id = get_key_from_stac(
-            self.stac_json, "properties.item_type"
-        )
+        self.collection_id = get_key_from_stac(self.stac_json, "properties.item_type")
         self.coordinates = get_key_from_stac(self.stac_json, "geometry.coordinates")
         self.order_status = get_key_from_stac(self.stac_json, "order.status")
 
@@ -186,7 +184,9 @@ def main(
     for stac_item in stac_items:
         try:
             # Submit an order for the given STAC item
-            logging.info(f"Ordering stac item {stac_item.item_id} in {stac_item.collection_id}")
+            logging.info(
+                f"Ordering stac item {stac_item.item_id} in {stac_item.collection_id}"
+            )
 
             order = asyncio.run(get_existing_order_details(stac_item.item_id))
             logging.info(f"Existing order: {order}")
@@ -195,7 +195,9 @@ def main(
             logging.info(f"Order status: {order_status}")
             if order_status in ["queued", "running"]:
                 order_id = order.get("id")
-                logging.info(f"Order for {stac_item.item_id} has already been submitted: {order_id}")
+                logging.info(
+                    f"Order for {stac_item.item_id} has already been submitted: {order_id}"
+                )
                 update_stac_item_failure(stac_item.stac_json, stac_item.file_name, None)
                 return
 
@@ -204,7 +206,10 @@ def main(
 
                 delivery_request = define_delivery(credentials, commercial_data_bucket)
                 order_request = create_order_request(
-                    stac_item.item_id, stac_item.collection_id, delivery_request, product_bundle
+                    stac_item.item_id,
+                    stac_item.collection_id,
+                    delivery_request,
+                    product_bundle,
                 )
 
                 asyncio.run(submit_order(order_request))

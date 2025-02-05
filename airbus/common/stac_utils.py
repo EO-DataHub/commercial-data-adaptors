@@ -102,7 +102,9 @@ def get_key_from_stac(stac_item: dict, key: str):
     return value
 
 
-def update_stac_item_failure(stac_item: dict, file_name: str, order_id: str = None) -> None:
+def update_stac_item_failure(
+    stac_item: dict, file_name: str, order_id: str = None
+) -> None:
     """Update the STAC item with the failure order status"""
     # Mark the order as failed in the local STAC item
     update_stac_order_status(stac_item, order_id, OrderStatus.FAILED.value)

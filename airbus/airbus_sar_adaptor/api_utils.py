@@ -4,7 +4,9 @@ import requests
 from common.auth_utils import generate_access_token
 
 
-def post_submit_order(acquisition_id: str, product_bundle: dict, env: str = "prod") -> str:
+def post_submit_order(
+    acquisition_id: str, product_bundle: dict, env: str = "prod"
+) -> str:
     """Submit an order for a SAR acquisition via POST request"""
     if env == "prod":
         url = "https://sar.api.oneatlas.airbus.com"
@@ -26,7 +28,7 @@ def post_submit_order(acquisition_id: str, product_bundle: dict, env: str = "pro
 
     logging.info(f"Sending POST request to submit an order with {body}")
 
-    return "placeholder" # TODO: remove
+    return "placeholder"  # TODO: remove
 
     access_token = generate_access_token(env)
     headers = {

@@ -60,7 +60,9 @@ def get_order_options(product_bundle: str) -> dict:
     # TODO: Expand and implement different options based on product bundle
     available_bundles = ["general_use"]
     if product_bundle not in available_bundles:
-        raise NotImplementedError(f"Product bundle {product_bundle} is not valid. Currently implemented bundles are {available_bundles}")
+        raise NotImplementedError(
+            f"Product bundle {product_bundle} is not valid. Currently implemented bundles are {available_bundles}"
+        )
     return {
         "productBundle": product_bundle,
         "orderTemplate": "Single User License",
