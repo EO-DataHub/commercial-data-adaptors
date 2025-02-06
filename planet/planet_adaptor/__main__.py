@@ -193,7 +193,7 @@ def main(
             logging.info(f"Found order ID {order_id}")
 
         except Exception as e:
-            logging.error(f"Failed to submit order: {e}")
+            logging.error(f"Failed to submit order: {e}", exc_info=True)
             update_stac_item_failure(stac_item.stac_json, stac_item.file_name, None)
             return
 
@@ -205,7 +205,7 @@ def main(
 
             download_and_store_locally(commercial_data_bucket, staging_folder, "assets")
         except Exception as e:
-            logging.error(f"Failed to retrieve data: {e}")
+            logging.error(f"Failed to retrieve data: {e}", exc_info=True)
             update_stac_item_failure(stac_item.stac_json, stac_item.file_name, order_id)
             return
         update_stac_item_success(

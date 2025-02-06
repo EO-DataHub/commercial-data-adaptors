@@ -12,8 +12,8 @@ $graph:
     doc: Order and load data from the Planet catalogue into a workspace
     inputs:
       commercial_data_bucket:
-        label: bucket from which commercial data will be recieved
-        doc: bucket from which commercial data will be recieved
+        label: bucket from which commercial data will be received
+        doc: bucket from which commercial data will be received
         type: string
       product_bundle:
         label: Product bundles comprise of a group of assets for an item. In the Planet API, an item is an entry in our catalog, and generally represents a single logical observation (or scene) captured by a satellite. Each item is defined by an item_type, which represents the class of spacecraft and/or processing level of the item

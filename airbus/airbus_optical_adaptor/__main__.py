@@ -138,7 +138,7 @@ def main(commercial_data_bucket: str, product_bundle: str, catalogue_dirs: List[
                 stac_item.item_uuids,
             )
         except Exception as e:
-            logging.error(f"Failed to submit order: {e}")
+            logging.error(f"Failed to submit order: {e}", exc_info=True)
             update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
             return
         try:
@@ -150,7 +150,7 @@ def main(commercial_data_bucket: str, product_bundle: str, catalogue_dirs: List[
                 "assets",
             )
         except Exception as e:
-            logging.error(f"Failed to retrieve data: {e}")
+            logging.error(f"Failed to retrieve data: {e}", exc_info=True)
             update_stac_item_failure(stac_item.stac_json, stac_item.file_name, order_id)
             return
         update_stac_item_success(

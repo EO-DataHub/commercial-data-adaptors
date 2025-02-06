@@ -12,8 +12,8 @@ $graph:
     doc: Order and load data from the Airbus SAR catalogue into a workspace
     inputs:
       commercial_data_bucket:
-        label: bucket from which commercial data will be recieved
-        doc: bucket from which commercial data will be recieved
+        label: bucket from which commercial data will be received
+        doc: bucket from which commercial data will be received
         type: string
       product_bundle:
         label: Reference to a group of settings describing parameters for an order
