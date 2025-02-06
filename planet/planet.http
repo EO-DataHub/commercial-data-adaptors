@@ -1,13 +1,12 @@
 ## Before attempting to run please provide your API Token in the following variable. You can generate this from the Hub website: https://test.eodatahub.org.uk/workspaces/
-@apiToken=my-api-token-here
+@apiToken=<apiToken>
 
 @scheme = https
 @ades=dev.eodatahub.org.uk/ades
 @username=planet
-@workspace = planet
-@stacKey = planet/commercial-data/collections/planet_data/items/20250108_060619_22_24c4.json
-@workspaceBucket = workspaces-eodhp-dev
-@workspaceDomain = workspaces.dev.eodhp.eco-ke-staging.com
+@workspace = apalmer-tpzuk
+@stacKey = s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/planet_data/items/20250108_060619_22_24c4.json
+@commercialBucket = workspaces-eodhp-dev
 @productBundle = analytic_udm2
 
 @deployStatus = {{deployProcessJson.response.headers.Location}}
@@ -64,10 +63,9 @@ Prefer: respond-async
 {
   "inputs": {
     "workspace": "{{workspace}}",
+    "commercial_data_bucket": "{{commercialBucket}}",
+    "product_bundle": "{{productBundle}}",
     "stac_key": "{{stacKey}}",
-    "workspace_bucket":  "{{workspaceBucket}}",
-    "workspace_domain":  "{{workspaceDomain}}",
-    "product_bundle":  "{{productBundle}}"
   }
 }
 

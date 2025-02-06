@@ -1,10 +1,8 @@
 import json
 import logging
 import mimetypes
+import os
 from enum import Enum
-
-from common.pulsar_utils import send_pulsar_message
-from common.s3_utils import list_objects_in_folder, retrieve_stac_item, upload_stac_item
 
 
 class OrderStatus(Enum):
@@ -15,6 +13,16 @@ class OrderStatus(Enum):
     SUCCEEDED = "succeeded"
     FAILED = "failed"
     CANCELED = "canceled"
+
+
+def retrieve_stac_item(file_path: str) -> dict:
+    """Retrieve a STAC item from a local JSON file"""
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"The file {file_path} does not exist.")
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        stac_item = json.load(f)
+    return stac_item
 
 
 def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, item_id: str):
@@ -73,14 +81,6 @@ def update_stac_order_status(stac_item: dict, item_id: str, order_status: str):
         stac_item["stac_extensions"].append(order_extension_url)
 
 
-def get_acquisition_id_from_stac(stac_item: dict, key: str) -> str:
-    """Extract the acquisition ID from a STAC item"""
-    acquisition_id = stac_item.get("properties", {}).get("acquisition_id")
-    if not acquisition_id:
-        raise ValueError(f"Acquisition ID not found in STAC item '{key}'.")
-    return acquisition_id
-
-
 def get_key_from_stac(stac_item: dict, key: str):
     """Extract a nested key from a STAC item. Key given as a dot-separated string."""
     parts = key.split(".")
@@ -88,61 +88,64 @@ def get_key_from_stac(stac_item: dict, key: str):
     for part in parts:
         value = value.get(part)
         if value is None:
-            logging.error(f"{part} not found in STAC item.")
+            logging.info(f"{part} not found in STAC item.")
             return None
+    logging.info(f"Retrieved {key} from STAC item: {value}")
     return value
 
 
-def update_stac_item_failure(bucket: str, key: str, item_id: str):
+def update_stac_item_failure(
+    stac_item: dict, file_name: str, order_id: str = None
+) -> None:
     """Update the STAC item with the failure order status"""
-    stac_item = retrieve_stac_item(bucket, key)
-
-    # Mark the order as failed and upload the updated STAC item
-    update_stac_order_status(stac_item, item_id, OrderStatus.FAILED.value)
-    upload_stac_item(bucket, key, stac_item)
-    send_pulsar_message(bucket, key)
+    # Mark the order as failed in the local STAC item
+    update_stac_order_status(stac_item, order_id, OrderStatus.FAILED.value)
 
     # Create local record of attempted order, to be used as the workflow output
-    write_stac_item_and_catalog(stac_item, key.split("/")[-1], item_id)
+    write_stac_item_and_catalog(stac_item, file_name, order_id)
 
 
 def update_stac_item_success(
-    bucket: str, key: str, parent_folder: str, item_id: str, workspaces_domain: str
+    stac_item: dict, file_name: str, order_id: str, directory: str
 ):
     """Update the STAC item with the assets and success order status"""
-    stac_item = retrieve_stac_item(bucket, key)
-    # List files and folders in the specified folder
-    folder_prefix = f"{parent_folder}/{item_id}/"
-    folder_objects = list_objects_in_folder(bucket, folder_prefix)
-
-    # Add all listed objects as assets to the STAC item
-    if "Contents" in folder_objects:
-        for obj in folder_objects["Contents"]:
-            file_key = obj["Key"]
-
-            # Skip if the file_key is a folder
-            if file_key.endswith("/"):
-                continue
-
-            asset_name = file_key.split("/")[-1]
+    # Add all files in the directory as assets to the STAC item
+    for root, _, files in os.walk(directory):
+        for asset in files:
+            asset_path = os.path.join(root, asset)
+            asset_name = os.path.basename(asset_path)
 
             # Determine the MIME type of the file
-            mime_type, _ = mimetypes.guess_type(file_key)
+            mime_type, _ = mimetypes.guess_type(asset_path)
             if mime_type is None:
                 mime_type = "application/octet-stream"  # Default MIME type
 
             # Add asset link to the file
-            parts = file_key.split("/", 1)
-            workspace = parts[0]
-            file_subpath = parts[1]
             stac_item["assets"][asset_name] = {
-                "href": f"https://{workspace}.{workspaces_domain}/files/{bucket}/{file_subpath}",
+                "href": asset_path,
                 "type": mime_type,
             }
     # Mark the order as succeeded and upload the updated STAC item
-    update_stac_order_status(stac_item, item_id, OrderStatus.SUCCEEDED.value)
-    upload_stac_item(bucket, key, stac_item)
-    send_pulsar_message(bucket, key)
+    update_stac_order_status(stac_item, order_id, OrderStatus.SUCCEEDED.value)
 
     # Create local record of the order, to be used as the workflow output
-    write_stac_item_and_catalog(stac_item, key.split("/")[-1], item_id)
+    write_stac_item_and_catalog(stac_item, file_name, order_id)
+
+
+def get_item_hrefs_from_catalogue(catalogue_dir: str) -> list:
+    """Return a list of all hrefs to items in the STAC catalog"""
+    catalog_path = os.path.join(catalogue_dir, "catalog.json")
+    if not os.path.exists(catalog_path):
+        raise FileNotFoundError(f"The file {catalog_path} does not exist.")
+
+    with open(catalog_path, "r", encoding="utf-8") as f:
+        catalog = json.load(f)
+
+    item_hrefs = []
+    for link in catalog.get("links", []):
+        if link.get("rel") == "item":
+            href = link.get("href")
+            absolute_href = os.path.normpath(os.path.join(catalogue_dir, href))
+            item_hrefs.append(absolute_href)
+
+    return item_hrefs

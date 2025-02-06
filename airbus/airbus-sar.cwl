@@ -11,22 +11,18 @@ $graph:
     label: Airbus SAR Adaptor
     doc: Order and load data from the Airbus SAR catalogue into a workspace
     inputs:
+      commercial_data_bucket:
+        label: bucket from which commercial data will be received
+        doc: bucket from which commercial data will be received
+        type: string
+      product_bundle:
+        label: Reference to a group of settings describing parameters for an order
+        doc: Reference to a group of settings describing parameters for an order
+        type: string
       stac_key:
         label: path to stac item in s3 describing data to order and download
         doc: path to stac item in s3 describing data to order and download
-        type: string
-      workspace_bucket:
-        label: bucket containing workspace contents to download data to
-        doc: bucket containing workspace contents to download data to
-        type: string
-      workspace_domain:
-        label: domain for the EODH workspace environment within which the data is stored
-        doc: domain for the EODH workspace environment within which the data is stored
-        type: string
-      env:
-        label: environment identifier within the Airbus ecosystem
-        doc: environment identifier within the Airbus ecosystem
-        type: string
+        type: Directory
     outputs:
       - id: results
         type: Directory
@@ -36,10 +32,9 @@ $graph:
       airbus-sar-adaptor:
         run: "#airbus-sar-adaptor"
         in:
+          commercial_data_bucket: commercial_data_bucket
+          product_bundle: product_bundle
           stac_key: stac_key
-          workspace_bucket: workspace_bucket
-          workspace_domain: workspace_domain
-          env: env
         out:
           - results
   # convert.sh - takes input args `--url`
@@ -47,25 +42,21 @@ $graph:
     id: airbus-sar-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/n1b3o1k2/airbus-sar-adaptor:0.0.2
+        dockerPull: public.ecr.aws/n1b3o1k2/airbus-sar-adaptor:0.0.3-rc1
     baseCommand: ["python", "-m", "airbus_sar_adaptor"]
     inputs:
-      stac_key:
+      commercial_data_bucket:
         type: string
         inputBinding:
           position: 1
-      workspace_bucket:
+      product_bundle:
         type: string
         inputBinding:
           position: 2
-      workspace_domain:
-        type: string
+      stac_key:
+        type: Directory
         inputBinding:
           position: 3
-      env:
-        type: string
-        inputBinding:
-          position: 4
 
     outputs:
       results:

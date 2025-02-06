@@ -7,9 +7,9 @@ schemas:
 $graph:
   # Workflow entrypoint
   - class: Workflow
-    id: airbus-optical-adaptor
-    label: Airbus Optical Adaptor
-    doc: Order and load data from the Airbus optical catalogue into a workspace
+    id: airbus-optical-adaptor-multi
+    label: Airbus Optical Adaptor Multi
+    doc: Order and load multiple data items from the Airbus optical catalogue into a workspace
     inputs:
       commercial_data_bucket:
         label: bucket from which commercial data will be received
@@ -19,10 +19,10 @@ $graph:
         label: Reference to a group of settings describing parameters for an order
         doc: Reference to a group of settings describing parameters for an order
         type: string
-      stac_key:
-        label: path to stac item in s3 describing data to order and download
-        doc: path to stac item in s3 describing data to order and download
-        type: Directory
+      stac_keys:
+        label: paths to stac item in s3 describing data to order and download
+        doc: paths to stac item in s3 describing data to order and download
+        type: Directory[]
     outputs:
       - id: results
         type: Directory
@@ -34,7 +34,7 @@ $graph:
         in:
           commercial_data_bucket: commercial_data_bucket
           product_bundle: product_bundle
-          stac_key: stac_key
+          stac_keys: stac_keys
         out:
           - results
   # convert.sh - takes input args `--url`
@@ -53,8 +53,8 @@ $graph:
         type: string
         inputBinding:
           position: 2
-      stac_key:
-        type: Directory
+      stac_keys:
+        type: Directory[]
         inputBinding:
           position: 3
 
