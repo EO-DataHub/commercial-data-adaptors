@@ -11,6 +11,10 @@ $graph:
     label: Planet Adaptor
     doc: Order and load data from the Planet catalogue into a workspace
     inputs:
+      workspace:
+        label: workspace name
+        doc: name of workspace
+        type: string
       commercial_data_bucket:
         label: bucket from which commercial data will be received
         doc: bucket from which commercial data will be received
@@ -32,6 +36,7 @@ $graph:
       planet-adaptor:
         run: "#planet-adaptor"
         in:
+          workspace: workspace
           commercial_data_bucket: commercial_data_bucket
           product_bundle: product_bundle
           stac_key: stac_key
@@ -45,18 +50,22 @@ $graph:
         dockerPull: public.ecr.aws/n1b3o1k2/planet-adaptor:latest
     baseCommand: ["python", "-m", "planet_adaptor"]
     inputs:
-      commercial_data_bucket:
+      workspace:
         type: string
         inputBinding:
           position: 1
-      product_bundle:
+      commercial_data_bucket:
         type: string
         inputBinding:
           position: 2
+      product_bundle:
+        type: string
+        inputBinding:
+          position: 3
       stac_key:
         type: Directory
         inputBinding:
-          position: 3
+          position: 4
 
     outputs:
       results:

@@ -1,5 +1,6 @@
 import asyncio
 import glob
+import hashlib
 import logging
 import mimetypes
 import os
@@ -146,8 +147,13 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
     return stac_items
 
 
+def hash_aoi(coordinates):
+    """Converts coordinates to a hash value for a unique item identifier for each AOI"""
+    return hashlib.md5(str(coordinates).encode("utf-8"))[:10]
+
+
 def main(
-    commercial_data_bucket: str, product_bundle: str, catalogue_dirs: List[str]
+    workspace: str, commercial_data_bucket: str, product_bundle: str, catalogue_dirs: List[str]
 ) -> None:
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
@@ -155,21 +161,24 @@ def main(
     stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
 
     for stac_item in stac_items:
+        order_id = f"{stac_item.item_id}-{workspace}-{hash_aoi(stac_item.coordinates)}"
+        delivery_folder = f"planet/commercial-data/orders"
+
         try:
             # Submit an order for the given STAC item
             logging.info(
                 f"Ordering stac item {stac_item.item_id} in {stac_item.collection_id}"
             )
 
-            order = asyncio.run(get_existing_order_details(stac_item.item_id))
+            order = asyncio.run(get_existing_order_details(order_id))
             logging.info(f"Existing order: {order}")
 
             order_status = order.get("state")
             logging.info(f"Order status: {order_status}")
             if order_status in ["queued", "running"]:
-                order_id = order.get("id")
+                submitted_order_id = order.get("id")
                 logging.info(
-                    f"Order for {stac_item.item_id} has already been submitted: {order_id}"
+                    f"Order for {stac_item.item_id} has already been submitted: {submitted_order_id}"
                 )
                 update_stac_item_failure(stac_item.stac_json, stac_item.file_name, None)
                 return
@@ -177,27 +186,27 @@ def main(
             if not order_status == "success":
                 credentials = get_credentials()
 
-                delivery_request = define_delivery(credentials, commercial_data_bucket)
+                delivery_request = define_delivery(credentials, commercial_data_bucket, delivery_folder)
                 order_request = create_order_request(
                     stac_item.item_id,
                     stac_item.collection_id,
                     delivery_request,
                     product_bundle,
+                    stac_item.coordinates,
                 )
 
                 asyncio.run(submit_order(order_request))
 
                 order = asyncio.run(get_existing_order_details(stac_item.item_id))
 
-            order_id = order.get("id")
-            logging.info(f"Found order ID {order_id}")
+            logging.info(f"Found order ID {order.get('id')}")
 
         except Exception as e:
             logging.error(f"Failed to submit order: {e}", exc_info=True)
             update_stac_item_failure(stac_item.stac_json, stac_item.file_name, None)
             return
 
-        staging_folder = f"planet/commercial-data/{order_id}"
+        staging_folder = f"{delivery_folder}/{order_id}"
 
         try:
             # Wait for data from planet to arrive, then move it to the workspace
@@ -214,4 +223,4 @@ def main(
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3:])
+    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4:])
