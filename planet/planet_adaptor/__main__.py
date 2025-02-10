@@ -153,7 +153,10 @@ def hash_aoi(coordinates):
 
 
 def main(
-    workspace: str, commercial_data_bucket: str, product_bundle: str, catalogue_dirs: List[str]
+    workspace: str,
+    commercial_data_bucket: str,
+    product_bundle: str,
+    catalogue_dirs: List[str],
 ) -> None:
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
@@ -162,7 +165,7 @@ def main(
 
     for stac_item in stac_items:
         order_id = f"{stac_item.item_id}-{workspace}-{hash_aoi(stac_item.coordinates)}"
-        delivery_folder = f"planet/commercial-data/orders"
+        delivery_folder = "planet/commercial-data/orders"
 
         try:
             # Submit an order for the given STAC item
@@ -186,7 +189,9 @@ def main(
             if not order_status == "success":
                 credentials = get_credentials()
 
-                delivery_request = define_delivery(credentials, commercial_data_bucket, delivery_folder)
+                delivery_request = define_delivery(
+                    credentials, commercial_data_bucket, delivery_folder
+                )
                 order_request = create_order_request(
                     stac_item.item_id,
                     stac_item.collection_id,
