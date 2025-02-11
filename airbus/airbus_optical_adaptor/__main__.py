@@ -12,6 +12,7 @@ from common.stac_utils import (
     retrieve_stac_item,
     update_stac_item_failure,
     update_stac_item_success,
+    verify_coordinates,
 )
 
 logging.basicConfig(
@@ -32,7 +33,6 @@ class STACItem:
             self.stac_json, "properties.acquisition_identifier"
         )
         self.collection_id = get_key_from_stac(self.stac_json, "collection")
-        self.coordinates = get_key_from_stac(self.stac_json, "geometry.coordinates")
         self.multi_acquisition_ids = (
             get_key_from_stac(
                 self.stac_json, "properties.composed_of_acquisition_identifiers"
@@ -111,13 +111,15 @@ def get_order_options(product_bundle: str) -> dict:
     }
 
 
-def main(commercial_data_bucket: str, product_bundle: str, catalogue_dirs: List[str]):
+def main(commercial_data_bucket: str, product_bundle: str, coordinates:  List, catalogue_dirs: List[str]):
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
     logging.info(f"Ordering items in catalogues from stage in: {catalogue_dirs}")
     order_options = get_order_options(product_bundle)
     logging.info(f"Order options: {order_options}")
     stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
+    if not verify_coordinates(coordinates):
+        raise ValueError(f"Invalid coordinates: {coordinates}")
 
     for stac_item in stac_items:
         try:
@@ -133,7 +135,7 @@ def main(commercial_data_bucket: str, product_bundle: str, catalogue_dirs: List[
             order_id = post_submit_order(
                 stac_item.acquisition_id,
                 stac_item.collection_id,
-                stac_item.coordinates,
+                coordinates,
                 order_options,
                 stac_item.item_uuids,
             )

@@ -3,7 +3,9 @@ import logging
 import mimetypes
 import os
 from enum import Enum
+from typing import List, Union
 
+Coordinate = Union[List[float], tuple[float, float]]
 
 class OrderStatus(Enum):
     ORDERABLE = "orderable"
@@ -149,3 +151,22 @@ def get_item_hrefs_from_catalogue(catalogue_dir: str) -> list:
             item_hrefs.append(absolute_href)
 
     return item_hrefs
+
+
+def is_valid_coordinate(coordinate: Coordinate) -> bool:
+    """Check if a single coordinate is valid."""
+    if not isinstance(coordinate, (list, tuple)) or len(coordinate) != 2:
+        logging.warning(f"Invalid coordinate format: {coordinate}, type: {type(coordinate)}")
+        return False
+    latitude, longitude = coordinate
+    if not isinstance(latitude, (int, float)) or not isinstance(longitude, (int, float)):
+        logging.warning(f"Invalid coordinate type. {latitude}: {type(latitude)}, {longitude}: {type(longitude)}")
+        return False
+    if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
+        logging.warning(f"Invalid coordinate: latitude={latitude}, longitude={longitude}")
+        return False
+    return True
+
+def verify_coordinates(coordinates: List[Coordinate]) -> bool:
+    """Verify that a list of coordinates is valid."""
+    return all(is_valid_coordinate(coord) for coord in coordinates)
