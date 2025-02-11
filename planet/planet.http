@@ -15,7 +15,7 @@
 ###
 
 # @name deleteProcess
-DELETE {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/planet-adaptor HTTP/1.1
+DELETE {{scheme}}://{{ades}}/planet/ogc-api/processes/planet-adaptor HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
@@ -23,14 +23,14 @@ Accept: application/json
 
 
 # @name listProcesses
-GET {{scheme}}://{{ades}}/{{username}}/ogc-api/processes HTTP/1.1
+GET {{scheme}}://{{ades}}/planet/ogc-api/processes HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
 ###
 
 # @name deployProcessJson
-POST {{scheme}}://{{ades}}/{{username}}/ogc-api/processes HTTP/1.1
+POST {{scheme}}://{{ades}}/planet/ogc-api/processes HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 Content-Type: application/cwl+yaml
@@ -47,14 +47,14 @@ Accept: application/json
 ###
 
 # @name getProcessDetails
-GET {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/planet-adaptor HTTP/1.1
+GET {{scheme}}://{{ades}}/planet/ogc-api/processes/planet-adaptor HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
 ###
 
 # @name executeProcess
-POST {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/planet-adaptor/execution HTTP/1.1
+POST {{scheme}}://{{ades}}/planet/ogc-api/processes/planet-adaptor/execution HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 Content-Type: application/json
@@ -86,14 +86,14 @@ Accept: application/json
 ###
 
 # @name undeployProcess
-DELETE {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/planet-adaptor HTTP/1.1
+DELETE {{scheme}}://{{ades}}/planet/ogc-api/processes/planet-adaptor HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
 ###
 
 # @name listJobs
-GET {{scheme}}://{{ades}}/{{username}}/ogc-api/jobs HTTP/1.1
+GET {{scheme}}://{{ades}}/planet/ogc-api/jobs HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
