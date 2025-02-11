@@ -87,7 +87,7 @@ def main(commercial_data_bucket: str, product_bundle: str, catalogue_dirs: List[
                 )
                 update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
                 return
-            order_id = post_submit_order(stac_item.acquisition_id, product_bundle)
+            order_id = post_submit_order(stac_item.acquisition_id, order_options)
         except Exception as e:
             logging.error(f"Failed to submit order: {e}", exc_info=True)
             update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
