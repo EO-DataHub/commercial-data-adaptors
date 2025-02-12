@@ -28,7 +28,7 @@ class STACItem:
         self.file_name = os.path.basename(stac_item_path)
         self.stac_json = retrieve_stac_item(stac_item_path)
         self.acquisition_id = get_key_from_stac(
-            self.stac_json, "properties.acquisition_identifier"
+            self.stac_json, "properties.acquisition_id"
         )
         self.collection_id = get_key_from_stac(self.stac_json, "collection")
         self.coordinates = get_key_from_stac(self.stac_json, "geometry.coordinates")
