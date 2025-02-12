@@ -101,10 +101,12 @@ def post_submit_order(
     }
 
     logging.info("Simulating order submission with a dummy response")
+    # TODO: remove simulated body to enable real orders
     body = {"quotationId": "12345"}
-    # response = requests.post(url, json=request_body, headers=headers)
-    # response.raise_for_status()
+    if not body:
+        response = requests.post(url, json=request_body, headers=headers)
+        response.raise_for_status()
 
-    # body = response.json()
+        body = response.json()
     logging.info(f"Order submitted: {body}")
     return body.get("quotationId")
