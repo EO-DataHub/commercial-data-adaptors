@@ -42,7 +42,7 @@ $graph:
     id: planet-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/n1b3o1k2/planet-adaptor:latest
+        dockerPull: public.ecr.aws/eodh/planet-adaptor:latest
     baseCommand: ["python", "-m", "planet_adaptor"]
     inputs:
       commercial_data_bucket:

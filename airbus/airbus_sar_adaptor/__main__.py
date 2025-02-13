@@ -28,7 +28,7 @@ class STACItem:
         self.file_name = os.path.basename(stac_item_path)
         self.stac_json = retrieve_stac_item(stac_item_path)
         self.acquisition_id = get_key_from_stac(
-            self.stac_json, "properties.acquisition_identifier"
+            self.stac_json, "properties.acquisition_id"
         )
         self.collection_id = get_key_from_stac(self.stac_json, "collection")
         self.coordinates = get_key_from_stac(self.stac_json, "geometry.coordinates")
@@ -87,7 +87,7 @@ def main(commercial_data_bucket: str, product_bundle: str, catalogue_dirs: List[
                 )
                 update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
                 return
-            order_id = post_submit_order(stac_item.acquisition_id, product_bundle)
+            order_id = post_submit_order(stac_item.acquisition_id, order_options)
         except Exception as e:
             logging.error(f"Failed to submit order: {e}", exc_info=True)
             update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
