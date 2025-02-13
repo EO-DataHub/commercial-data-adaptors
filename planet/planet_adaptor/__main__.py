@@ -200,7 +200,7 @@ def main(
                     stac_item.coordinates,
                 )
 
-                asyncio.run(submit_order(order_request))
+                # asyncio.run(submit_order(order_request))
 
                 order = asyncio.run(get_existing_order_details(stac_item.item_id))
 
