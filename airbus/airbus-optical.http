@@ -3,7 +3,6 @@
 
 @scheme = https
 @ades=dev.eodatahub.org.uk/ades
-@username=airbus
 @workspace = apalmer-tpzuk
 @stacKey = s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_spot_data/items/DS_SPOT6_202501291332306_FR1_FR1_SV1_SV1_W056S20_01871.json
 @commercialBucket = commercial-data-airbus
@@ -15,7 +14,7 @@
 ###
 
 # @name deleteProcess
-DELETE {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor HTTP/1.1
+DELETE {{scheme}}://{{ades}}/airbus/ogc-api/processes/airbus-optical-adaptor HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
@@ -23,14 +22,14 @@ Accept: application/json
 
 
 # @name listProcesses
-GET {{scheme}}://{{ades}}/{{username}}/ogc-api/processes HTTP/1.1
+GET {{scheme}}://{{ades}}/airbus/ogc-api/processes HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
 ###
 
 # @name deployProcessJson
-POST {{scheme}}://{{ades}}/{{username}}/ogc-api/processes HTTP/1.1
+POST {{scheme}}://{{ades}}/airbus/ogc-api/processes HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 Content-Type: application/cwl+yaml
@@ -47,14 +46,14 @@ Accept: application/json
 ###
 
 # @name getProcessDetails
-GET {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor HTTP/1.1
+GET {{scheme}}://{{ades}}/airbus/ogc-api/processes/airbus-optical-adaptor HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
 ###
 
 # @name executeProcess
-POST {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor/execution HTTP/1.1
+POST {{scheme}}://{{ades}}/airbus/ogc-api/processes/airbus-optical-adaptor/execution HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 Content-Type: application/json
@@ -97,14 +96,14 @@ Accept: application/json
 ###
 
 # @name undeployProcess
-DELETE {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor HTTP/1.1
+DELETE {{scheme}}://{{ades}}/airbus/ogc-api/processes/airbus-optical-adaptor HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
 ###
 
 # @name listJobs
-GET {{scheme}}://{{ades}}/{{username}}/ogc-api/jobs HTTP/1.1
+GET {{scheme}}://{{ades}}/airbus/ogc-api/jobs HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
