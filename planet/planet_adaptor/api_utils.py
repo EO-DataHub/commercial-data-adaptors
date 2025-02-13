@@ -32,9 +32,15 @@ def define_delivery(credentials: dict, bucket: str, folder: str) -> dict:
 
 
 def create_order_request(
-    item_id: str, collection_id: str, delivery: dict, product_bundle: str, aoi: list
+    item_id: str, collection_id: str, delivery: dict, product_bundle: str, coordinates: list
 ) -> dict:
     """Create an order for Planet data"""
+
+    aoi = {
+        "type":
+        "Polygon",
+        "coordinates": coordinates,
+    }
 
     order = planet.order_request.build_request(
         name=item_id,
@@ -45,7 +51,7 @@ def create_order_request(
                 item_type=collection_id,
             )
         ],
-        aoi=aoi,
+        tools=[planet.order_request.clip_tool(aoi=aoi)],
         delivery=delivery,
     )
 
