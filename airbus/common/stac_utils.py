@@ -158,7 +158,7 @@ def is_valid_coordinate(coordinate: Coordinate) -> bool:
     """Check if a single coordinate is valid."""
     if not isinstance(coordinate, (list, tuple)) or len(coordinate) != 2:
         logging.warning(
-            f"Invalid coordinate format: {coordinate}, type: {type(coordinate)}"
+            f"Invalid coordinate format: {coordinate}, type: {type(coordinate)}, length: {len(coordinate)}"
         )
         return False
     latitude, longitude = coordinate
@@ -171,7 +171,7 @@ def is_valid_coordinate(coordinate: Coordinate) -> bool:
         return False
     if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
         logging.warning(
-            f"Invalid coordinate: latitude={latitude}, longitude={longitude}"
+            f"Invalid coordinate value: latitude={latitude}, longitude={longitude}"
         )
         return False
     return True
