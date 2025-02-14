@@ -23,6 +23,10 @@ $graph:
         label: Product bundles comprise of a group of assets for an item. In the Planet API, an item is an entry in our catalog, and generally represents a single logical observation (or scene) captured by a satellite. Each item is defined by an item_type, which represents the class of spacecraft and/or processing level of the item
         doc: Product bundles comprise of a group of assets for an item. In the Planet API, an item is an entry in our catalog, and generally represents a single logical observation (or scene) captured by a satellite. Each item is defined by an item_type, which represents the class of spacecraft and/or processing level of the item
         type: string
+      coordinates:
+        label: coordinates of any AOI
+        doc: coordinates of any AOI
+        type: string
       stac_key:
         label: path to stac item in s3 describing data to order and download
         doc: path to stac item in s3 describing data to order and download
@@ -39,6 +43,7 @@ $graph:
           workspace: workspace
           commercial_data_bucket: commercial_data_bucket
           product_bundle: product_bundle
+          coordinates: coordinates
           stac_key: stac_key
         out:
           - results
@@ -47,7 +52,7 @@ $graph:
     id: planet-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/n1b3o1k2/planet-adaptor:latest
+        dockerPull: public.ecr.aws/eodh/planet-adaptor:latest
     baseCommand: ["python", "-m", "planet_adaptor"]
     inputs:
       workspace:
@@ -62,10 +67,14 @@ $graph:
         type: string
         inputBinding:
           position: 3
+      coordinates:
+        type: string
+        inputBinding:
+          position: 4
       stac_key:
         type: Directory
         inputBinding:
-          position: 4
+          position: 5
 
     outputs:
       results:
