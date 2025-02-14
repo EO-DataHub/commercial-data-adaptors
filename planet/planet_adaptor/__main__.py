@@ -95,8 +95,8 @@ async def get_existing_order_details(order_name) -> dict:
     orders_client = planet.OrdersClient(session=session)
 
     async for order in orders_client.list_orders():
-            if order["name"] == order_name:
-                return order
+        if order["name"] == order_name:
+            return order
     return {}
 
 
@@ -214,7 +214,7 @@ def main(
 
                 order = asyncio.run(get_existing_order_details(order_name))
 
-            order_id = order.get('id')
+            order_id = order.get("id")
             logging.info(f"Found order ID {order_id}")
 
         except Exception as e:
@@ -224,12 +224,20 @@ def main(
 
         try:
             # Wait for data from planet to arrive, then move it to the workspace
-            poll_s3_for_data(source_bucket=commercial_data_bucket, order_id=order_id, folder=delivery_folder)
+            poll_s3_for_data(
+                source_bucket=commercial_data_bucket,
+                order_id=order_id,
+                folder=delivery_folder,
+            )
 
-            download_and_store_locally(commercial_data_bucket, f"{delivery_folder}/{order_id}", "assets")
+            download_and_store_locally(
+                commercial_data_bucket, f"{delivery_folder}/{order_id}", "assets"
+            )
         except Exception as e:
             logging.error(f"Failed to retrieve data: {e}", exc_info=True)
-            update_stac_item_failure(stac_item.stac_json, stac_item.file_name, stac_item.item_id)
+            update_stac_item_failure(
+                stac_item.stac_json, stac_item.file_name, stac_item.item_id
+            )
             return
         update_stac_item_success(
             stac_item.stac_json, stac_item.file_name, order_name, "assets"
@@ -238,16 +246,12 @@ def main(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Order Planet data")
-    parser.add_argument(
-        "workspace", type=str, help="Workspace name"
-    )
+    parser.add_argument("workspace", type=str, help="Workspace name")
     parser.add_argument(
         "commercial_data_bucket", type=str, help="Commercial data bucket"
     )
     parser.add_argument("product_bundle", type=str, help="Product bundle")
-    parser.add_argument(
-        "coordinates", type=str, help="Stringified list of coordinates"
-    )
+    parser.add_argument("coordinates", type=str, help="Stringified list of coordinates")
     parser.add_argument(
         "catalogue_dirs",
         nargs="+",

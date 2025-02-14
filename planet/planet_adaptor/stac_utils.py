@@ -5,6 +5,7 @@ from typing import List, Union
 
 Coordinate = Union[List[float], tuple[float, float]]
 
+
 def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, item_id: str):
     """Creates local catalog containing final STAC item to be used as a record for the order"""
     # Rewrite STAC links to point to local files only

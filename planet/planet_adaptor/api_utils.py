@@ -32,13 +32,17 @@ def define_delivery(credentials: dict, bucket: str, folder: str) -> dict:
 
 
 def create_order_request(
-    order_id: str, item_id: str, collection_id: str, delivery: dict, product_bundle: str, coordinates: list
+    order_id: str,
+    item_id: str,
+    collection_id: str,
+    delivery: dict,
+    product_bundle: str,
+    coordinates: list,
 ) -> dict:
     """Create an order for Planet data"""
 
     aoi = {
-        "type":
-        "Polygon",
+        "type": "Polygon",
         "coordinates": coordinates,
     }
 
