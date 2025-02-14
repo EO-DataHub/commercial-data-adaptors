@@ -1,6 +1,7 @@
+import argparse
+import json
 import logging
 import os
-import sys
 from typing import List
 
 from airbus_sar_adaptor.api_utils import is_order_in_progress, post_submit_order
@@ -69,7 +70,12 @@ def get_order_options(product_bundle: str) -> dict:
     }
 
 
-def main(commercial_data_bucket: str, product_bundle: str, catalogue_dirs: List[str]):
+def main(
+    commercial_data_bucket: str,
+    product_bundle: str,
+    coordinates: List,
+    catalogue_dirs: List[str],
+):
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
     logging.info(f"Ordering items in catalogues from stage in: {catalogue_dirs}")
@@ -110,4 +116,28 @@ def main(commercial_data_bucket: str, product_bundle: str, catalogue_dirs: List[
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3:])
+    parser = argparse.ArgumentParser(description="Order Airbus data")
+    parser.add_argument(
+        "commercial_data_bucket", type=str, help="Commercial data bucket"
+    )
+    parser.add_argument("product_bundle", type=str, help="Product bundle")
+    parser.add_argument(
+        "--coordinates", type=str, required=True, help="Stringified list of coordinates"
+    )
+    parser.add_argument(
+        "--catalogue_dirs",
+        nargs="+",
+        required=True,
+        help="List of catalogue directories",
+    )
+
+    args = parser.parse_args()
+
+    coordinates = json.loads(args.coordinates)
+
+    main(
+        args.commercial_data_bucket,
+        args.product_bundle,
+        coordinates,
+        args.catalogue_dirs,
+    )

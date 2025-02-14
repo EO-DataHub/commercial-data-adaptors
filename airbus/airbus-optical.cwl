@@ -22,10 +22,7 @@ $graph:
       coordinates:
         label: List of coordinates for the area of interest
         doc: List of coordinates for the area of interest
-        type:
-          type: array
-          items:
-            type: float[]
+        type: string
       stac_key:
         label: path to stac item in s3 describing data to order and download
         doc: path to stac item in s3 describing data to order and download
@@ -50,7 +47,7 @@ $graph:
     id: airbus-optical-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/airbus-optical-adaptor:0.0.1
+        dockerPull: public.ecr.aws/eodh/airbus-optical-adaptor:0.0.2-rc4
     baseCommand: ["python", "-m", "airbus_optical_adaptor"]
     inputs:
       commercial_data_bucket:
@@ -62,14 +59,14 @@ $graph:
         inputBinding:
           position: 2
       coordinates:
-        type: array
-        items:
-          type: float[]
+        type: string
         inputBinding:
+          prefix: --coordinates
           position: 3
       stac_key:
         type: Directory
         inputBinding:
+          prefix: --catalogue_dirs
           position: 4
 
     outputs:
