@@ -19,6 +19,10 @@ $graph:
         label: Reference to a group of settings describing parameters for an order
         doc: Reference to a group of settings describing parameters for an order
         type: string
+      coordinates:
+        label: List of coordinates for the area of interest
+        doc: List of coordinates for the area of interest
+        type: string
       stac_keys:
         label: paths to stac item in s3 describing data to order and download
         doc: paths to stac item in s3 describing data to order and download
@@ -34,6 +38,7 @@ $graph:
         in:
           commercial_data_bucket: commercial_data_bucket
           product_bundle: product_bundle
+          coordinates: coordinates
           stac_keys: stac_keys
         out:
           - results
@@ -53,10 +58,16 @@ $graph:
         type: string
         inputBinding:
           position: 2
+      coordinates:
+        type: string
+        inputBinding:
+          prefix: --coordinates
+          position: 3
       stac_keys:
         type: Directory[]
         inputBinding:
-          position: 3
+          prefix: --catalogue_dirs
+          position: 4
 
     outputs:
       results:

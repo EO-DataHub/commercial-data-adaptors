@@ -1,6 +1,7 @@
+import argparse
+import json
 import logging
 import os
-import sys
 from typing import List
 
 from airbus_optical_adaptor.api_utils import post_submit_order
@@ -12,6 +13,7 @@ from common.stac_utils import (
     retrieve_stac_item,
     update_stac_item_failure,
     update_stac_item_success,
+    verify_coordinates,
 )
 
 logging.basicConfig(
@@ -111,13 +113,21 @@ def get_order_options(product_bundle: str) -> dict:
     }
 
 
-def main(commercial_data_bucket: str, product_bundle: str, catalogue_dirs: List[str]):
+def main(
+    commercial_data_bucket: str,
+    product_bundle: str,
+    coordinates: List,
+    catalogue_dirs: List[str],
+):
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
     logging.info(f"Ordering items in catalogues from stage in: {catalogue_dirs}")
     order_options = get_order_options(product_bundle)
     logging.info(f"Order options: {order_options}")
     stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
+    logging.info(f"Coordinates: {coordinates}")
+    if not verify_coordinates(coordinates):
+        raise ValueError(f"Invalid coordinates: {coordinates}")
 
     for stac_item in stac_items:
         try:
@@ -130,10 +140,13 @@ def main(commercial_data_bucket: str, product_bundle: str, catalogue_dirs: List[
                 # Unable to obtain the item_id again, so cannot wait for data. Fail the order.
                 update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
                 return
+            if not coordinates:
+                # Limit order by an AOI if provided
+                coordinates = stac_item.coordinates
             order_id = post_submit_order(
                 stac_item.acquisition_id,
                 stac_item.collection_id,
-                stac_item.coordinates,
+                coordinates,
                 order_options,
                 stac_item.item_uuids,
             )
@@ -159,4 +172,28 @@ def main(commercial_data_bucket: str, product_bundle: str, catalogue_dirs: List[
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3:])
+    parser = argparse.ArgumentParser(description="Order Airbus data")
+    parser.add_argument(
+        "commercial_data_bucket", type=str, help="Commercial data bucket"
+    )
+    parser.add_argument("product_bundle", type=str, help="Product bundle")
+    parser.add_argument(
+        "--coordinates", type=str, required=True, help="Stringified list of coordinates"
+    )
+    parser.add_argument(
+        "--catalogue_dirs",
+        nargs="+",
+        required=True,
+        help="List of catalogue directories",
+    )
+
+    args = parser.parse_args()
+
+    coordinates = json.loads(args.coordinates)
+
+    main(
+        args.commercial_data_bucket,
+        args.product_bundle,
+        coordinates,
+        args.catalogue_dirs,
+    )

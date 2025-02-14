@@ -3,10 +3,11 @@
 
 @scheme = https
 @ades=dev.eodatahub.org.uk/ades
-@username=airbus
 @workspace = apalmer-tpzuk
 @commercialBucket = commercial-data-airbus
 @productBundle = general_use
+@coordinates = [[[-8.04575859845228, 31.7018335608202], [-8.13085357903705, 31.6969488507275], [-8.1302277917, 31.6038867332], [-8.02977481420451, 31.5982362108166], [-7.95210682318346, 31.603078531553], [-7.9521185644, 31.6961852319], [-8.04575859845228, 31.7018335608202]]]
+
 
 @deployStatus = {{deployProcessJson.response.headers.Location}}
 @executeStatus = {{executeProcess.response.headers.Location}}
@@ -14,7 +15,7 @@
 ###
 
 # @name deleteProcess
-DELETE {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor-multi HTTP/1.1
+DELETE {{scheme}}://{{ades}}/airbus/ogc-api/processes/airbus-optical-adaptor-multi HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
@@ -22,14 +23,14 @@ Accept: application/json
 
 
 # @name listProcesses
-GET {{scheme}}://{{ades}}/{{username}}/ogc-api/processes HTTP/1.1
+GET {{scheme}}://{{ades}}/airbus/ogc-api/processes HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
 ###
 
 # @name deployProcessJson
-POST {{scheme}}://{{ades}}/{{username}}/ogc-api/processes HTTP/1.1
+POST {{scheme}}://{{ades}}/airbus/ogc-api/processes HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 Content-Type: application/cwl+yaml
@@ -46,14 +47,14 @@ Accept: application/json
 ###
 
 # @name getProcessDetails
-GET {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor-multi HTTP/1.1
+GET {{scheme}}://{{ades}}/airbus/ogc-api/processes/airbus-optical-adaptor-multi HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
 ###
 
 # @name executeProcess
-POST {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor-multi/execution HTTP/1.1
+POST {{scheme}}://{{ades}}/airbus/ogc-api/processes/airbus-optical-adaptor-multi/execution HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 Content-Type: application/json
@@ -68,7 +69,8 @@ Prefer: respond-async
       "s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_pneo_data/items/ACQ_CP_PNEO3_052307_0015052955_ST_0-27.json",
       "s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_pneo_data/items/ACQ_PNEO3_05230715052955.json",
       "s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/airbus_pneo_data/items/ACQ_PNEO3_05230715052956.json"
-    ]
+    ],
+    "coordinates": "{{coordinates}}"
   }
 }
 
@@ -89,14 +91,14 @@ Accept: application/json
 ###
 
 # @name undeployProcess
-DELETE {{scheme}}://{{ades}}/{{username}}/ogc-api/processes/airbus-optical-adaptor-multi HTTP/1.1
+DELETE {{scheme}}://{{ades}}/airbus/ogc-api/processes/airbus-optical-adaptor-multi HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
 ###
 
 # @name listJobs
-GET {{scheme}}://{{ades}}/{{username}}/ogc-api/jobs HTTP/1.1
+GET {{scheme}}://{{ades}}/airbus/ogc-api/jobs HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
