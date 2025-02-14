@@ -1,7 +1,9 @@
 import json
 import logging
 import os
+from typing import List, Union
 
+Coordinate = Union[List[float], tuple[float, float]]
 
 def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, item_id: str):
     """Creates local catalog containing final STAC item to be used as a record for the order"""
@@ -89,3 +91,34 @@ def get_item_hrefs_from_catalogue(catalogue_dir: str) -> list:
             item_hrefs.append(absolute_href)
 
     return item_hrefs
+
+
+def is_valid_coordinate(coordinate: Coordinate) -> bool:
+    """Check if a single coordinate is valid."""
+    if not isinstance(coordinate, (list, tuple)) or len(coordinate) != 2:
+        logging.warning(
+            f"Invalid coordinate format: {coordinate}, type: {type(coordinate)}, length: {len(coordinate)}"
+        )
+        return False
+    latitude, longitude = coordinate
+    if not isinstance(latitude, (int, float)) or not isinstance(
+        longitude, (int, float)
+    ):
+        logging.warning(
+            f"Invalid coordinate type. {latitude}: {type(latitude)}, {longitude}: {type(longitude)}"
+        )
+        return False
+    if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
+        logging.warning(
+            f"Invalid coordinate value: latitude={latitude}, longitude={longitude}"
+        )
+        return False
+    return True
+
+
+def verify_coordinates(coordinates: List[List[Coordinate]]) -> bool:
+    """Verify that a list of coordinates is valid."""
+    return all(
+        all(is_valid_coordinate(coord) for coord in polygons)
+        for polygons in coordinates
+    )

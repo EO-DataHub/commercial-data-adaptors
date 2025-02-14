@@ -32,7 +32,7 @@ def define_delivery(credentials: dict, bucket: str, folder: str) -> dict:
 
 
 def create_order_request(
-    item_id: str, collection_id: str, delivery: dict, product_bundle: str, coordinates: list
+    order_id: str, item_id: str, collection_id: str, delivery: dict, product_bundle: str, coordinates: list
 ) -> dict:
     """Create an order for Planet data"""
 
@@ -43,7 +43,7 @@ def create_order_request(
     }
 
     order = planet.order_request.build_request(
-        name=item_id,
+        name=order_id,
         products=[
             planet.order_request.product(
                 item_ids=[item_id],

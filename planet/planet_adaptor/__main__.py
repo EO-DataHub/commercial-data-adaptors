@@ -1,10 +1,11 @@
+import argparse
 import asyncio
 import glob
 import hashlib
+import json
 import logging
 import mimetypes
 import os
-import sys
 from enum import Enum
 from typing import List
 
@@ -23,6 +24,7 @@ from planet_adaptor.stac_utils import (
     get_item_hrefs_from_catalogue,
     get_key_from_stac,
     update_stac_order_status,
+    verify_coordinates,
     write_stac_item_and_catalog,
 )
 
@@ -76,16 +78,16 @@ def update_stac_item_success(
     logging.info(list(glob.iglob("./**/*", recursive=True)))
 
 
-def update_stac_item_failure(stac_item: dict, file_name: str, order_id: str) -> None:
+def update_stac_item_failure(stac_item: dict, file_name: str, item_id: str) -> None:
     """Update the STAC item with the failure order status"""
     # Mark the order as failed in the local STAC item
-    update_stac_order_status(stac_item, order_id, OrderStatus.FAILED.value)
+    update_stac_order_status(stac_item, item_id, OrderStatus.FAILED.value)
 
     # Create local record of attempted order, to be used as the workflow output
-    write_stac_item_and_catalog(stac_item, file_name, order_id)
+    write_stac_item_and_catalog(stac_item, file_name, item_id)
 
 
-async def get_existing_order_details(item_id) -> dict:
+async def get_existing_order_details(order_name) -> dict:
     planet_api_key = get_api_key_from_secret("api-keys", "planet-key")
     auth = planet.Auth.from_key(planet_api_key)
 
@@ -93,11 +95,8 @@ async def get_existing_order_details(item_id) -> dict:
     orders_client = planet.OrdersClient(session=session)
 
     async for order in orders_client.list_orders():
-        for product in order["products"]:
-            for product_item_id in product["item_ids"]:
-                if product_item_id == item_id:
-                    return order
-
+            if order["name"] == order_name:
+                return order
     return {}
 
 
@@ -149,13 +148,14 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
 
 def hash_aoi(coordinates):
     """Converts coordinates to a hash value for a unique item identifier for each AOI"""
-    return hashlib.md5(str(coordinates).encode("utf-8"))[:10]
+    return str(hashlib.md5(str(coordinates).encode("utf-8")).hexdigest())
 
 
 def main(
     workspace: str,
     commercial_data_bucket: str,
     product_bundle: str,
+    coordinates: List,
     catalogue_dirs: List[str],
 ) -> None:
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
@@ -164,7 +164,16 @@ def main(
     stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
 
     for stac_item in stac_items:
-        order_id = f"{stac_item.item_id}-{workspace}-{hash_aoi(stac_item.coordinates)}"
+        if coordinates:
+            order_name = f"{stac_item.item_id}-{workspace}-{hash_aoi(coordinates)}"
+        else:
+            coordinates = stac_item.coordinates
+            order_name = f"{stac_item.item_id}-{workspace}"
+
+        logging.info(f"Coordinates: {coordinates}")
+        if not verify_coordinates(coordinates):
+            raise ValueError(f"Invalid coordinates: {coordinates}")
+
         delivery_folder = "planet/commercial-data/orders"
 
         try:
@@ -173,7 +182,7 @@ def main(
                 f"Ordering stac item {stac_item.item_id} in {stac_item.collection_id}"
             )
 
-            order = asyncio.run(get_existing_order_details(order_id))
+            order = asyncio.run(get_existing_order_details(order_name))
             logging.info(f"Existing order: {order}")
 
             order_status = order.get("state")
@@ -193,39 +202,66 @@ def main(
                     credentials, commercial_data_bucket, delivery_folder
                 )
                 order_request = create_order_request(
+                    order_name,
                     stac_item.item_id,
                     stac_item.collection_id,
                     delivery_request,
                     product_bundle,
-                    stac_item.coordinates,
+                    coordinates,
                 )
 
-                # asyncio.run(submit_order(order_request))
+                asyncio.run(submit_order(order_request))
 
-                order = asyncio.run(get_existing_order_details(stac_item.item_id))
+                order = asyncio.run(get_existing_order_details(order_name))
 
-            logging.info(f"Found order ID {order.get('id')}")
+            order_id = order.get('id')
+            logging.info(f"Found order ID {order_id}")
 
         except Exception as e:
             logging.error(f"Failed to submit order: {e}", exc_info=True)
             update_stac_item_failure(stac_item.stac_json, stac_item.file_name, None)
             return
 
-        staging_folder = f"{delivery_folder}/{order_id}"
-
         try:
             # Wait for data from planet to arrive, then move it to the workspace
-            poll_s3_for_data(source_bucket=commercial_data_bucket, order_id=order_id)
+            poll_s3_for_data(source_bucket=commercial_data_bucket, order_id=order_id, folder=delivery_folder)
 
-            download_and_store_locally(commercial_data_bucket, staging_folder, "assets")
+            download_and_store_locally(commercial_data_bucket, f"{delivery_folder}/{order_id}", "assets")
         except Exception as e:
             logging.error(f"Failed to retrieve data: {e}", exc_info=True)
-            update_stac_item_failure(stac_item.stac_json, stac_item.file_name, order_id)
+            update_stac_item_failure(stac_item.stac_json, stac_item.file_name, stac_item.item_id)
             return
         update_stac_item_success(
-            stac_item.stac_json, stac_item.file_name, order_id, "assets"
+            stac_item.stac_json, stac_item.file_name, order_name, "assets"
         )
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4:])
+    parser = argparse.ArgumentParser(description="Order Planet data")
+    parser.add_argument(
+        "workspace", type=str, help="Workspace name"
+    )
+    parser.add_argument(
+        "commercial_data_bucket", type=str, help="Commercial data bucket"
+    )
+    parser.add_argument("product_bundle", type=str, help="Product bundle")
+    parser.add_argument(
+        "coordinates", type=str, help="Stringified list of coordinates"
+    )
+    parser.add_argument(
+        "catalogue_dirs",
+        nargs="+",
+        help="List of catalogue directories",
+    )
+
+    args = parser.parse_args()
+
+    coordinates = json.loads(args.coordinates)
+
+    main(
+        args.workspace,
+        args.commercial_data_bucket,
+        args.product_bundle,
+        coordinates,
+        args.catalogue_dirs,
+    )
