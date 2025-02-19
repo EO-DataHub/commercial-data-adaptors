@@ -48,7 +48,7 @@ class OrderStatus(Enum):
 
 
 def update_stac_item_success(
-    stac_item: dict, file_name: str, order_id: str, directory: str
+    stac_item: dict, file_name: str, order_name: str, directory: str
 ):
     """Update the STAC item with the assets and success order status"""
     # Add all files in the directory as assets to the STAC item
@@ -68,23 +68,23 @@ def update_stac_item_success(
                 "type": mime_type,
             }
     # Mark the order as succeeded and upload the updated STAC item
-    update_stac_order_status(stac_item, order_id, OrderStatus.SUCCEEDED.value)
+    update_stac_order_status(stac_item, order_name, OrderStatus.SUCCEEDED.value)
 
     # Create local record of the order, to be used as the workflow output
-    write_stac_item_and_catalog(stac_item, file_name, order_id)
+    write_stac_item_and_catalog(stac_item, file_name, order_name)
 
     # Adding this for debugging purposes later on, just in case
     logging.info(f"Files in current working directory: {os.getcwd()}")
     logging.info(list(glob.iglob("./**/*", recursive=True)))
 
 
-def update_stac_item_failure(stac_item: dict, file_name: str, item_id: str) -> None:
+def update_stac_item_failure(stac_item: dict, file_name: str, order_name: str) -> None:
     """Update the STAC item with the failure order status"""
     # Mark the order as failed in the local STAC item
-    update_stac_order_status(stac_item, item_id, OrderStatus.FAILED.value)
+    update_stac_order_status(stac_item, order_name, OrderStatus.FAILED.value)
 
     # Create local record of attempted order, to be used as the workflow output
-    write_stac_item_and_catalog(stac_item, file_name, item_id)
+    write_stac_item_and_catalog(stac_item, file_name, order_name)
 
 
 async def get_existing_order_details(order_name) -> dict:
