@@ -21,23 +21,33 @@ def get_api_key_from_secret(
     return api_key
 
 
-def define_delivery(credentials: dict, bucket: str) -> dict:
+def define_delivery(credentials: dict, bucket: str, folder: str) -> dict:
     return planet.order_request.amazon_s3(
         credentials["AccessKeyId"],
         credentials["SecretAccessKey"],
         bucket,
         "eu-west-2",
-        path_prefix="planet/commercial-data",
+        path_prefix=folder,
     )
 
 
 def create_order_request(
-    item_id: str, collection_id: str, delivery: dict, product_bundle: str
+    order_id: str,
+    item_id: str,
+    collection_id: str,
+    delivery: dict,
+    product_bundle: str,
+    coordinates: list,
 ) -> dict:
     """Create an order for Planet data"""
 
+    aoi = {
+        "type": "Polygon",
+        "coordinates": coordinates,
+    }
+
     order = planet.order_request.build_request(
-        name=item_id,
+        name=order_id,
         products=[
             planet.order_request.product(
                 item_ids=[item_id],
@@ -45,6 +55,7 @@ def create_order_request(
                 item_type=collection_id,
             )
         ],
+        tools=[planet.order_request.clip_tool(aoi=aoi)],
         delivery=delivery,
     )
 
