@@ -219,7 +219,7 @@ def main(
 
         except Exception as e:
             logging.error(f"Failed to submit order: {e}", exc_info=True)
-            update_stac_item_failure(stac_item.stac_json, stac_item.file_name, None)
+            update_stac_item_failure(stac_item.stac_json, stac_item.file_name, order_name)
             return
 
         try:
@@ -236,7 +236,7 @@ def main(
         except Exception as e:
             logging.error(f"Failed to retrieve data: {e}", exc_info=True)
             update_stac_item_failure(
-                stac_item.stac_json, stac_item.file_name, stac_item.item_id
+                stac_item.stac_json, stac_item.file_name, order_id
             )
             return
         update_stac_item_success(
