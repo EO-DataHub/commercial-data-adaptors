@@ -157,7 +157,11 @@ def main(
         try:
             # Wait for data from airbus to arrive, then download it
             # Archive is of the format <customer_reference>_<internal_reference>_<acquisition_id>.zip
-            obj = poll_s3_for_data(commercial_data_bucket, customer_reference, f"{stac_item.acquisition_id}.zip")
+            obj = poll_s3_for_data(
+                commercial_data_bucket,
+                customer_reference,
+                f"{stac_item.acquisition_id}.zip",
+            )
             download_and_store_locally(
                 commercial_data_bucket,
                 obj,

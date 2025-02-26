@@ -16,7 +16,11 @@ class PollingTimeoutError(Exception):
 
 
 def poll_s3_for_data(
-    source_bucket: str, item_prefix: str, item_suffix: str, polling_interval: int = 60, timeout: int = 86400
+    source_bucket: str,
+    item_prefix: str,
+    item_suffix: str,
+    polling_interval: int = 60,
+    timeout: int = 86400,
 ) -> dict:
     """Poll an S3 bucket for an item with given prefix and suffix, and return the object details"""
     start_time = time.time()
@@ -24,7 +28,9 @@ def poll_s3_for_data(
 
     while True:
         # Check if the file exists in the source bucket
-        logging.info(f"Checking for item with prefix {item_prefix} and suffix {item_suffix} file in bucket {source_bucket}...")
+        logging.info(
+            f"Checking for item with prefix {item_prefix} and suffix {item_suffix} file in bucket {source_bucket}..."
+        )
         response = s3.list_objects_v2(Bucket=source_bucket, Prefix=item_prefix)
 
         for obj in response.get("Contents", []):
@@ -66,4 +72,6 @@ def download_and_store_locally(source_bucket: str, obj: dict, destination_folder
             zip_ref.extractall(destination_folder)
             logging.info(f"Extracted '{local_archive_path}' to '{destination_folder}'.")
     else:
-        logging.warning(f"Unsupported file format for '{local_archive_path}'. Skipping extraction.")
+        logging.warning(
+            f"Unsupported file format for '{local_archive_path}'. Skipping extraction."
+        )

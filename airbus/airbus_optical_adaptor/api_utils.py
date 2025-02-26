@@ -37,7 +37,7 @@ def post_submit_order(
         item_id = acquisition_id
     else:
         raise ValueError(f"Collection {collection_id} not recognised")
-    
+
     letters = string.ascii_letters + string.digits
     customer_reference = "".join(random.choice(letters) for i in range(10))
 
