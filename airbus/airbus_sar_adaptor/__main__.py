@@ -100,7 +100,7 @@ def main(
             return
         try:
             # Wait for data from airbus to arrive, then move it to the workspace
-            obj = poll_s3_for_data(commercial_data_bucket, order_id)
+            obj = poll_s3_for_data(commercial_data_bucket, order_id, ".tar.gz")
             download_and_store_locally(
                 commercial_data_bucket,
                 obj,

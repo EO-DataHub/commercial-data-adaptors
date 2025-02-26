@@ -143,7 +143,7 @@ def main(
             if not coordinates:
                 # Limit order by an AOI if provided
                 coordinates = stac_item.coordinates
-            order_id = post_submit_order(
+            order_id, customer_reference = post_submit_order(
                 stac_item.acquisition_id,
                 stac_item.collection_id,
                 coordinates,
@@ -156,7 +156,8 @@ def main(
             return
         try:
             # Wait for data from airbus to arrive, then download it
-            obj = poll_s3_for_data(commercial_data_bucket, order_id)
+            # Archive is of the format <customer_reference>_<internal_reference>_<acquisition_id>.zip
+            obj = poll_s3_for_data(commercial_data_bucket, customer_reference, f"{stac_item.acquisition_id}.zip")
             download_and_store_locally(
                 commercial_data_bucket,
                 obj,
