@@ -2,6 +2,7 @@ import logging
 import os
 import tarfile
 import time
+from typing import List
 import zipfile
 
 import boto3
@@ -21,7 +22,7 @@ def poll_s3_for_data(
     item_suffix: str,
     polling_interval: int = 60,
     timeout: int = 86400,
-) -> dict:
+) -> List[dict]:
     """Poll an S3 bucket for an item with given prefix and suffix, and return the object details"""
     start_time = time.time()
     end_time = start_time + timeout
@@ -33,10 +34,22 @@ def poll_s3_for_data(
         )
         response = s3.list_objects_v2(Bucket=source_bucket, Prefix=item_prefix)
 
-        for obj in response.get("Contents", []):
-            if obj["Key"].endswith(item_suffix):
-                logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
-                return obj
+        matching_objects = [
+            obj for obj in response.get("Contents", []) if obj["Key"].endswith(item_suffix)
+        ]
+
+        if matching_objects:
+            logging.info(f"Found {len(matching_objects)} matching items in bucket {source_bucket}.")
+            logging.info(f"Waiting {polling_interval} seconds before downloading all matching items.")
+            time.sleep(polling_interval)
+
+            response = s3.list_objects_v2(Bucket=source_bucket, Prefix=item_prefix)
+            matching_objects = [
+                obj for obj in response.get("Contents", []) if obj["Key"].endswith(item_suffix)
+            ]
+            logging.info(f"Returning {len(matching_objects)} matching objects after waiting.")
+            logging.info(f"Matching object keys: {[obj['Key'] for obj in matching_objects]}")
+            return matching_objects
 
         # Check for timeout
         if time.time() > end_time:
