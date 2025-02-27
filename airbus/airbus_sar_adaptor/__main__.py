@@ -28,9 +28,7 @@ class STACItem:
         self.file_path = stac_item_path
         self.file_name = os.path.basename(stac_item_path)
         self.stac_json = retrieve_stac_item(stac_item_path)
-        self.acquisition_id = get_key_from_stac(
-            self.stac_json, "id"
-        )
+        self.acquisition_id = get_key_from_stac(self.stac_json, "id")
         self.collection_id = get_key_from_stac(self.stac_json, "collection")
         self.order_status = get_key_from_stac(self.stac_json, "order.status")
 
