@@ -65,7 +65,7 @@ def get_order_options(product_bundle: str) -> dict:
         )
     return {
         "productBundle": product_bundle,
-        "orderTemplate": "Single User License",
+        "orderTemplate": "Ordering",
     }
 
 
