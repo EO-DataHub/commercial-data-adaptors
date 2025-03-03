@@ -1,6 +1,5 @@
 import logging
-import random
-import string
+from datetime import datetime
 
 import requests
 from common.auth_utils import generate_access_token
@@ -11,6 +10,7 @@ def post_submit_order(
     collection_id: str,
     coordinates: list,
     order_options: dict,
+    workspace: str,
     item_uuids: list = None,
 ) -> str:
     """Submit an order for an optical acquisition via POST request"""
@@ -38,8 +38,8 @@ def post_submit_order(
     else:
         raise ValueError(f"Collection {collection_id} not recognised")
 
-    letters = string.ascii_letters + string.digits
-    customer_reference = "".join(random.choice(letters) for i in range(10))
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    customer_reference = f"{workspace}_{timestamp}"
 
     request_body = {
         "aoi": [
