@@ -30,7 +30,7 @@ def poll_s3_for_data(
     while True:
         # Check if the file exists in the source bucket
         logging.info(
-            f"Checking for item with prefix {item_prefix} and suffix {item_suffix} file in bucket {source_bucket}..."
+            f"Checking for item with prefix {item_prefix} and suffix {item_suffix} in bucket {source_bucket}..."
         )
         response = s3.list_objects_v2(Bucket=source_bucket, Prefix=item_prefix)
 
@@ -66,7 +66,7 @@ def poll_s3_for_data(
         # Check for timeout
         if time.time() > end_time:
             raise PollingTimeoutError(
-                f"Timeout reached while polling for item in bucket {source_bucket} after {timeout} seconds."
+                f"Timeout reached while polling for item with prefix {item_prefix} and suffix {item_suffix} in bucket {source_bucket} after {timeout} seconds."
             )
 
         # Wait for the specified interval before checking again
