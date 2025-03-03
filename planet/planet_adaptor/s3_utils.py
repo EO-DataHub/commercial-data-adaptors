@@ -18,6 +18,7 @@ class PollingTimeoutError(Exception):
 def poll_s3_for_data(
     source_bucket: str,
     order_id: str,
+    folder: str,
     polling_interval: int = 60,
     timeout: int = 86400,
 ) -> dict:
@@ -27,12 +28,11 @@ def poll_s3_for_data(
 
     while True:
         # Check if the folder containing the order exists in the source bucket
-        folder = f"planet/commercial-data/{order_id}/"
         logging.info(f"Checking for {folder} folder in bucket {source_bucket}...")
         response = s3_client.list_objects_v2(Bucket=source_bucket, Prefix=folder)
         for obj in response.get("Contents", []):
             if obj["Key"].endswith(
-                f"{order_id}/manifest.json"
+                f"/{order_id}/manifest.json"
             ):  # manifest.json is the final file to be delivered
                 logging.info(
                     f"Data available: file '{obj['Key']}' found in bucket '{source_bucket}'."
@@ -60,22 +60,23 @@ def download_and_store_locally(
     response = s3_client.list_objects_v2(Bucket=source_bucket, Prefix=parent_folder)
 
     for obj in response.get("Contents", []):
-        logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
-        destination_file_path = os.path.join(
-            destination_folder, os.path.basename(obj["Key"])
-        )
-        s3_client.download_file(source_bucket, obj["Key"], destination_file_path)
-        logging.info(
-            f"Downloaded '{obj['Key']}' from bucket '{source_bucket}' to '{destination_file_path}'."
-        )
+        if not obj["Key"].endswith("/"):
+            logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
+            destination_file_path = os.path.join(
+                destination_folder, os.path.basename(obj["Key"])
+            )
+            s3_client.download_file(source_bucket, obj["Key"], destination_file_path)
+            logging.info(
+                f"Downloaded '{obj['Key']}' from bucket '{source_bucket}' to '{destination_file_path}'."
+            )
 
-        if obj["Key"].endswith(".zip"):
-            logging.info("Zip file found. Unzipping...")
+            if obj["Key"].endswith(".zip"):
+                logging.info("Zip file found. Unzipping...")
 
-            # Extract the contents of the .zip file
-            with zipfile.ZipFile(destination_file_path) as z:
-                z.extractall(path=destination_folder)
-                logging.info(f"Extracted '{obj['Key']}' to '{destination_folder}'.")
+                # Extract the contents of the .zip file
+                with zipfile.ZipFile(destination_file_path) as z:
+                    z.extractall(path=destination_folder)
+                    logging.info(f"Extracted '{obj['Key']}' to '{destination_folder}'.")
 
 
 def retrieve_stac_item(file_path: str) -> dict:

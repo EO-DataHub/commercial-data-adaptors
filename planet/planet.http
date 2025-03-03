@@ -8,6 +8,7 @@
 @stacKey = s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/planet_data/items/20250108_060619_22_24c4.json
 @commercialBucket = workspaces-eodhp-dev
 @productBundle = analytic_udm2
+@coordinates = [[[-8.04575859845228, 31.7018335608202], [-8.13085357903705, 31.6969488507275], [-8.1302277917, 31.6038867332], [-8.02977481420451, 31.5982362108166], [-7.95210682318346, 31.603078531553], [-7.9521185644, 31.6961852319], [-8.04575859845228, 31.7018335608202]]]
 
 @deployStatus = {{deployProcessJson.response.headers.Location}}
 @executeStatus = {{executeProcess.response.headers.Location}}
@@ -66,6 +67,7 @@ Prefer: respond-async
     "commercial_data_bucket": "{{commercialBucket}}",
     "product_bundle": "{{productBundle}}",
     "stac_key": "{{stacKey}}",
+    "coordinates": "{{coordinates}}"
   }
 }
 
