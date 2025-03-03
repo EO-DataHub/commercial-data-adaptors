@@ -9,6 +9,7 @@ def post_submit_order(
     collection_id: str,
     coordinates: list,
     order_options: dict,
+    workspace: str,
     item_uuids: list = None,
 ) -> str:
     """Submit an order for an optical acquisition via POST request"""
@@ -94,7 +95,7 @@ def post_submit_order(
 
     logging.info(f"Sending POST request to submit an order with {request_body}")
 
-    access_token = generate_access_token()
+    access_token = generate_access_token(workspace)
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",

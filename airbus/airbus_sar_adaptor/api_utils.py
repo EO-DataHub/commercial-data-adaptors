@@ -5,7 +5,7 @@ from common.auth_utils import generate_access_token
 
 
 def post_submit_order(
-    acquisition_id: str, order_options: dict, env: str = "prod"
+    acquisition_id: str, order_options: dict, workspace: str, env: str = "dev"
 ) -> str:
     """Submit an order for a SAR acquisition via POST request"""
     if env == "prod":
@@ -28,7 +28,7 @@ def post_submit_order(
 
     logging.info(f"Sending POST request to submit an order with {body}")
 
-    access_token = generate_access_token(env)
+    access_token = generate_access_token(workspace, env)
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
@@ -46,14 +46,14 @@ def post_submit_order(
     return None
 
 
-def post_items_status(env: str = "prod") -> dict:
+def post_items_status(workspace: str, env: str = "dev") -> dict:
     """Query the status of all orders via POST request"""
     if env == "prod":
         url = "https://sar.api.oneatlas.airbus.com"
     else:
         url = "https://dev.sar.api.oneatlas.airbus.com"
 
-    access_token = generate_access_token(env)
+    access_token = generate_access_token(workspace, env)
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
@@ -73,9 +73,9 @@ def post_items_status(env: str = "prod") -> dict:
     return body
 
 
-def is_order_in_progress(acquisition_id: str, env: str = "prod") -> bool:
+def is_order_in_progress(acquisition_id: str, workspace: str, env: str = "dev") -> bool:
     """Check if an order for a SAR acquisition is in progress"""
-    status = post_items_status(env)
+    status = post_items_status(workspace, env)
     for feature in status:
         if feature.get("acquisitionId") == acquisition_id:
             return feature.get("status") == "submitted"
