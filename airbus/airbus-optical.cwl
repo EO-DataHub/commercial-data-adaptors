@@ -11,6 +11,10 @@ $graph:
     label: Airbus Optical Adaptor
     doc: Order and load data from the Airbus optical catalogue into a workspace
     inputs:
+      workspace:
+        label: workspace name
+        doc: name of workspace
+        type: string
       commercial_data_bucket:
         label: bucket from which commercial data will be received
         doc: bucket from which commercial data will be received
@@ -36,6 +40,7 @@ $graph:
       airbus-optical-adaptor:
         run: "#airbus-optical-adaptor"
         in:
+          workspace: workspace
           commercial_data_bucket: commercial_data_bucket
           product_bundle: product_bundle
           coordinates: coordinates
@@ -47,27 +52,31 @@ $graph:
     id: airbus-optical-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/airbus-optical-adaptor:0.0.2-rc4
+        dockerPull: public.ecr.aws/eodh/airbus-optical-adaptor:0.0.3-rc3
     baseCommand: ["python", "-m", "airbus_optical_adaptor"]
     inputs:
-      commercial_data_bucket:
+      workspace:
         type: string
         inputBinding:
           position: 1
-      product_bundle:
+      commercial_data_bucket:
         type: string
         inputBinding:
           position: 2
+      product_bundle:
+        type: string
+        inputBinding:
+          position: 3
       coordinates:
         type: string
         inputBinding:
           prefix: --coordinates
-          position: 3
+          position: 4
       stac_key:
         type: Directory
         inputBinding:
           prefix: --catalogue_dirs
-          position: 4
+          position: 5
 
     outputs:
       results:

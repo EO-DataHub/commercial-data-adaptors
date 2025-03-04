@@ -42,6 +42,7 @@ class STACItem:
             or []
         )
         self.order_status = get_key_from_stac(self.stac_json, "order.status")
+        self.item_uuid = get_key_from_stac(self.stac_json, "properties.id")
         self.item_uuids = []
 
 
@@ -85,15 +86,15 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
                     )
                 # Add the UUID of each item to the main multi-acquisition item
                 multi_stac_item = STACItem(multi_stac_item_path)
-                stac_item_to_add.item_uuids.append(
-                    get_key_from_stac(multi_stac_item.stac_json, "properties.id")
-                )
+                stac_item_to_add.item_uuids.append(multi_stac_item.item_uuid)
             # Remove the multi-acquisition items from the list
             stac_items = [
                 item
                 for item in stac_items
                 if item.acquisition_id not in stac_item_to_add.multi_acquisition_ids
             ]
+        else:
+            stac_item_to_add.item_uuids = [stac_item_to_add.item_uuid]
         stac_items.append(stac_item_to_add)
 
     return stac_items
@@ -114,6 +115,7 @@ def get_order_options(product_bundle: str) -> dict:
 
 
 def main(
+    workspace: str,
     commercial_data_bucket: str,
     product_bundle: str,
     coordinates: List,
@@ -143,11 +145,12 @@ def main(
             if not coordinates:
                 # Limit order by an AOI if provided
                 coordinates = stac_item.coordinates
-            order_id = post_submit_order(
+            order_id, customer_reference = post_submit_order(
                 stac_item.acquisition_id,
                 stac_item.collection_id,
                 coordinates,
                 order_options,
+                workspace,
                 stac_item.item_uuids,
             )
         except Exception as e:
@@ -156,12 +159,18 @@ def main(
             return
         try:
             # Wait for data from airbus to arrive, then download it
-            obj = poll_s3_for_data(commercial_data_bucket, order_id)
-            download_and_store_locally(
+            # Archive is of the format <customer_reference>_<internal_reference>_<acquisition_id>.zip
+            objs = poll_s3_for_data(
                 commercial_data_bucket,
-                obj,
-                "assets",
+                customer_reference,
+                f"{stac_item.acquisition_id}.zip",
             )
+            for obj in objs:
+                download_and_store_locally(
+                    commercial_data_bucket,
+                    obj,
+                    "assets",
+                )
         except Exception as e:
             logging.error(f"Failed to retrieve data: {e}", exc_info=True)
             update_stac_item_failure(stac_item.stac_json, stac_item.file_name, order_id)
@@ -173,6 +182,7 @@ def main(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Order Airbus data")
+    parser.add_argument("workspace", type=str, help="Workspace name")
     parser.add_argument(
         "commercial_data_bucket", type=str, help="Commercial data bucket"
     )
@@ -192,6 +202,7 @@ if __name__ == "__main__":
     coordinates = json.loads(args.coordinates)
 
     main(
+        args.workspace,
         args.commercial_data_bucket,
         args.product_bundle,
         coordinates,

@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 import requests
 from common.auth_utils import generate_access_token
@@ -9,6 +10,7 @@ def post_submit_order(
     collection_id: str,
     coordinates: list,
     order_options: dict,
+    workspace: str,
     item_uuids: list = None,
 ) -> str:
     """Submit an order for an optical acquisition via POST request"""
@@ -36,6 +38,9 @@ def post_submit_order(
     else:
         raise ValueError(f"Collection {collection_id} not recognised")
 
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    customer_reference = f"{workspace}_{timestamp}"
+
     request_body = {
         "aoi": [
             {
@@ -57,7 +62,7 @@ def post_submit_order(
         ],
         "primaryMarket": "NQUAL",
         "secondaryMarket": "",
-        "customerReference": "Polygon 1",
+        "customerReference": customer_reference,
         "optionsPerProductType": [
             {
                 "productTypeId": product_type,
@@ -100,13 +105,9 @@ def post_submit_order(
         "Content-Type": "application/json",
     }
 
-    logging.info("Simulating order submission with a dummy response")
-    # TODO: remove simulated body to enable real orders
-    body = {"quotationId": "12345"}
-    if not body:
-        response = requests.post(url, json=request_body, headers=headers)
-        response.raise_for_status()
+    response = requests.post(url, json=request_body, headers=headers)
+    response.raise_for_status()
 
-        body = response.json()
+    body = response.json()
     logging.info(f"Order submitted: {body}")
-    return body.get("quotationId")
+    return body.get("salesOrderId"), customer_reference
