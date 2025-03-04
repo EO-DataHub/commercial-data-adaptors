@@ -153,7 +153,7 @@ def main(
                 order_options,
                 workspace,
                 stac_item.item_uuids,
-                end_users
+                end_users,
             )
         except Exception as e:
             logging.error(f"Failed to submit order: {e}", exc_info=True)
@@ -199,7 +199,10 @@ if __name__ == "__main__":
         help="List of catalogue directories",
     )
     parser.add_argument(
-        "--end_users", type=str, required=True, help="Stringified list of end user names and countries"
+        "--end_users",
+        type=str,
+        required=True,
+        help="Stringified list of end user names and countries",
     )
 
     args = parser.parse_args()

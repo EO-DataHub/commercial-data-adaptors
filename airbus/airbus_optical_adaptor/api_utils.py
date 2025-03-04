@@ -97,7 +97,7 @@ def post_submit_order(
 
     if item_id:
         request_body["items"][0]["datastripIds"] = [item_id]
-    
+
     if end_users and collection_id == "airbus_pneo_data":
         request_body["endUsers"] = end_users
 
