@@ -28,11 +28,8 @@ class STACItem:
         self.file_path = stac_item_path
         self.file_name = os.path.basename(stac_item_path)
         self.stac_json = retrieve_stac_item(stac_item_path)
-        self.acquisition_id = get_key_from_stac(
-            self.stac_json, "properties.acquisition_id"
-        )
+        self.acquisition_id = get_key_from_stac(self.stac_json, "id")
         self.collection_id = get_key_from_stac(self.stac_json, "collection")
-        self.coordinates = get_key_from_stac(self.stac_json, "geometry.coordinates")
         self.order_status = get_key_from_stac(self.stac_json, "order.status")
 
 
@@ -66,7 +63,7 @@ def get_order_options(product_bundle: str) -> dict:
         )
     return {
         "productBundle": product_bundle,
-        "orderTemplate": "Single User License",
+        "orderTemplate": "Ordering",
     }
 
 
@@ -96,18 +93,21 @@ def main(
                 update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
                 return
             order_id = post_submit_order(stac_item.acquisition_id, order_options, workspace)
+            order_id = order_id.split("_")[0]
         except Exception as e:
             logging.error(f"Failed to submit order: {e}", exc_info=True)
             update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
             return
         try:
             # Wait for data from airbus to arrive, then move it to the workspace
-            obj = poll_s3_for_data(commercial_data_bucket, order_id)
-            download_and_store_locally(
-                commercial_data_bucket,
-                obj,
-                "assets",
-            )
+            # Archive is of the format SO_<order_id>_<item_number>_1.tar.gz
+            objs = poll_s3_for_data(commercial_data_bucket, f"SO_{order_id}", ".tar.gz")
+            for obj in objs:
+                download_and_store_locally(
+                    commercial_data_bucket,
+                    obj,
+                    "assets",
+                )
         except Exception as e:
             logging.error(f"Failed to retrieve data: {e}", exc_info=True)
             update_stac_item_failure(stac_item.stac_json, stac_item.file_name, order_id)

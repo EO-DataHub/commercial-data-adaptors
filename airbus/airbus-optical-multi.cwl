@@ -52,7 +52,7 @@ $graph:
     id: airbus-optical-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/airbus-optical-adaptor:0.0.1
+        dockerPull: public.ecr.aws/eodh/airbus-optical-adaptor:0.0.3-rc2
     baseCommand: ["python", "-m", "airbus_optical_adaptor"]
     inputs:
       commercial_data_bucket:
