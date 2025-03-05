@@ -5,7 +5,7 @@ from common.auth_utils import generate_access_token
 
 
 def post_submit_order(
-    acquisition_id: str, order_options: dict, workspace: str, env: str = "dev"
+    acquisition_id: str, order_options: dict, workspace: str, env: str = "prod"
 ) -> str:
     """Submit an order for a SAR acquisition via POST request"""
     if env == "prod":
@@ -46,7 +46,7 @@ def post_submit_order(
     return None
 
 
-def post_items_status(workspace: str, env: str = "dev") -> dict:
+def post_items_status(workspace: str, env: str = "prod") -> dict:
     """Query the status of all orders via POST request"""
     if env == "prod":
         url = "https://sar.api.oneatlas.airbus.com"
@@ -73,7 +73,7 @@ def post_items_status(workspace: str, env: str = "dev") -> dict:
     return body
 
 
-def is_order_in_progress(acquisition_id: str, workspace: str, env: str = "dev") -> bool:
+def is_order_in_progress(acquisition_id: str, workspace: str, env: str = "prod") -> bool:
     """Check if an order for a SAR acquisition is in progress"""
     status = post_items_status(workspace, env)
     for feature in status:
