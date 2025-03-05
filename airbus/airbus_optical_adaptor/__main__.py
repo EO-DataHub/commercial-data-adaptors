@@ -120,6 +120,7 @@ def main(
     product_bundle: str,
     coordinates: List,
     catalogue_dirs: List[str],
+    workspace: str
 ):
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
@@ -130,6 +131,7 @@ def main(
     logging.info(f"Coordinates: {coordinates}")
     if not verify_coordinates(coordinates):
         raise ValueError(f"Invalid coordinates: {coordinates}")
+    logging.info(f"Target workspace: {workspace}")
 
     for stac_item in stac_items:
         try:
@@ -152,6 +154,7 @@ def main(
                 order_options,
                 workspace,
                 stac_item.item_uuids,
+                workspace
             )
         except Exception as e:
             logging.error(f"Failed to submit order: {e}", exc_info=True)
@@ -196,6 +199,7 @@ if __name__ == "__main__":
         required=True,
         help="List of catalogue directories",
     )
+    parser.add_argument("--workspace", type=str, required=True, help="Target workspace the order will be sent to")
 
     args = parser.parse_args()
 
@@ -207,4 +211,5 @@ if __name__ == "__main__":
         args.product_bundle,
         coordinates,
         args.catalogue_dirs,
+        args.workspace
     )
