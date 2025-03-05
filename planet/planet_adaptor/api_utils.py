@@ -4,48 +4,34 @@ import logging
 import json
 from kubernetes import client, config
 
-from Crypto.Cipher import AES
 import planet
 
 
-
-def decrypt_planet_api_key(encrypted_key_b64: str, aes_key_b64: str) -> str:
+def decrypt_planet_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
     """
-    Decrypts an AES-256-GCM encrypted key using the provided OTP.
+    Decrypts a ciphertext using One-Time Pad (OTP) via XOR.
 
-    :param encrypted_key_b64: Base64 encoded encrypted key from AWS Secrets Manager.
-    :param aes_key_b64: Base64 encoded AES key from Kubernetes Secret.
-    :return: Decrypted plaintext key.
+    :param ciphertext_b64: Base64 encoded ciphertext from AWS Secrets Manager.
+    :param otp_key_b64: Base64 encoded OTP key from Kubernetes Secret.
+    :return: Decrypted plaintext API key.
     """
+
     try:
-        # Decode the AES cluster secret
-        aes_key = base64.b64decode(aes_key_b64)
-        if len(aes_key) != 32:
-            raise ValueError("AES KEY must be 32 bytes for AES-256")
+        # Decode both OTP key and ciphertext from Base64
+        ciphertext = base64.b64decode(ciphertext_b64)
+        otp_key = base64.b64decode(otp_key_b64)
 
-        # Decode the encrypted AWS secret
-        encrypted_key = base64.b64decode(encrypted_key_b64)
+        if len(ciphertext) != len(otp_key):
+            raise ValueError("Ciphertext and OTP key must be the same length.")
 
-        # Extract nonce (first 12 bytes) and ciphertext + tag
-        nonce_size = 12  # Standard nonce size for AES-GCM
-        tag_size = 16  # AES-GCM tag size is 16 bytes
+        # XOR decryption
+        plaintext_bytes = bytes(c ^ k for c, k in zip(ciphertext, otp_key))
 
-        nonce = encrypted_key[:nonce_size]
-        ciphertext = encrypted_key[nonce_size:-tag_size]  # Extract ciphertext
-        tag = encrypted_key[-tag_size:]  # Extract tag
-
-        # Decrypt using AES-GCM
-        cipher = AES.new(aes_key, AES.MODE_GCM, nonce=nonce)
-        decrypted_key = cipher.decrypt_and_verify(ciphertext, tag)
-
-        # Decode the decrypted key
-        decrypted_text = decrypted_key.decode("utf-8")
-
-        return decrypted_text
+        return plaintext_bytes.decode("utf-8")
 
     except UnicodeDecodeError:
         logging.error("Warning: Decrypted data is not valid UTF-8. Returning raw bytes.")
-        return decrypted_key.hex()
+        return plaintext_bytes.hex()
     except ValueError as e:
         logging.error(f"Integrity check failed: {e}")
         return None
@@ -54,40 +40,38 @@ def decrypt_planet_api_key(encrypted_key_b64: str, aes_key_b64: str) -> str:
         return None
 
 
+
 def get_planet_api_key(
     workspace: str
 ) -> str:
     """
-    Retrieve an OTP (one-time pad) AES key from a Kubernetes secret and use it to decrypt an AWS secret.
-    
+    Retrieve an OTP (One-Time Pad) from Kubernetes Secrets and use it to decrypt
+    an encrypted API key stored in AWS Secrets Manager.
+
     Steps:
-    1. Load Kubernetes in-cluster config and initialize the API client.
-    2. Retrieve the AES key from the Kubernetes secret store.
-    3. Use the AES key to decrypt an encrypted secret stored in AWS Secrets Manager.
-    4. Return the decrypted API key.
+    1. Load Kubernetes config and initialize the API client.
+    2. Retrieve the OTP key from Kubernetes secret.
+    3. Retrieve the ciphertext from AWS Secrets Manager.
+    4. Use the OTP key to decrypt the ciphertext and return the plaintext API key.
     """
 
     provider = "planet"
 
-    # Create a Kubernetes API client
+    # Initialize Kubernetes API client
     config.load_incluster_config()
     v1 = client.CoreV1Api()
     namespace = f"ws-{workspace}"
 
-    # Retreive the decryption key from kubernetes secret
-    logging.info("Fetching AES decryption secret from Kubernetes...")
-    secret_data = v1.read_namespaced_secret(f'aes-key-{provider}', namespace)
-    aes_key_encoded = secret_data.data.get('aes-key')
+    # Retrieve the OTP key from Kubernetes Secrets
+    logging.info("Fetching OTP key from Kubernetes...")
+    secret_data = v1.read_namespaced_secret(f'otp-{provider}', namespace)
+    otp_key_b64 = secret_data.data.get('otp')  # Adjusted key name for OTP
 
-    if not aes_key_encoded:
-        raise ValueError(f"AES encryption key not found in Kubernetes Secret in namespace {namespace}.")
+    if not otp_key_b64:
+        raise ValueError(f"OTP key not found in Kubernetes Secret in namespace {namespace}.")
 
-    # Decode the AES encryption key
-    aes_key_b64 = base64.b64decode(aes_key_encoded).decode("utf-8")
-    logging.info("Successfully retrieved and decoded AES encryption key.")
-
-    # Initialize AWS Secrets Manager client and fetch all secrets in target namespace
-    logging.info(f"Fetching encrypted secret for provider {provider} from AWS Secrets Manager...")
+    # Initialize AWS Secrets Manager client and fetch the provider's ciphertext
+    logging.info(f"Fetching ciphertext for provider '{provider}' from AWS Secrets Manager...")
     secrets_client = boto3.client('secretsmanager')
     response = secrets_client.get_secret_value(SecretId=namespace)
 
@@ -95,17 +79,17 @@ def get_planet_api_key(
     secret_string = response.get("SecretString", "{}")
     secret_dict = json.loads(secret_string)
     
-    # Retrieve the encrypted API key (Base64 encoded)
-    encrypted_api_key_b64 = secret_dict.get(provider)
-    if not encrypted_api_key_b64:
-        raise ValueError("Encrypted API key not found in AWS Secrets Manager.")
+    # Retrieve the encrypted API key (Base64 encoded ciphertext)
+    ciphertext_b64 = secret_dict.get(provider)
+    if not ciphertext_b64:
+        raise ValueError(f"Ciphertext (encrypted API key) not found in AWS Secrets Manager for provider {provider}.")
     
-    # Decrypt the API key using the AES encryption key
-    decrypted_api_key = decrypt_planet_api_key(encrypted_api_key_b64, aes_key_b64)
+    # Decrypt the API key using the OTP key
+    plaintext_api_key = decrypt_planet_api_key(ciphertext_b64, otp_key_b64)
 
     logging.info(f"Successfully fetched API key for {provider}")
 
-    return decrypted_api_key
+    return plaintext_api_key
 
 
 
@@ -168,7 +152,7 @@ def create_order_request(
 
 async def submit_order(workspace: str, order_details: dict) -> str:
     """Submit an order for Planet data"""
-    planet_api_key = get_api_key_from_secret("api-keys", "planet-key")
+    planet_api_key = get_planet_api_key(workspace)
     auth = planet.Auth.from_key(planet_api_key)
     async with planet.Session(auth=auth) as sess:
         # 'orders' is the service name for the Orders API.
