@@ -52,7 +52,7 @@ $graph:
     id: planet-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/planet-adaptor:jl004
+        dockerPull: public.ecr.aws/eodh/planet-adaptor:latest
     baseCommand: ["python", "-m", "planet_adaptor"]
     inputs:
       workspace:

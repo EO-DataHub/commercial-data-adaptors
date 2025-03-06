@@ -81,7 +81,6 @@ def main(
     logging.info(f"Order options: {order_options}")
     stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
 
-    logging.info(f"WORKSPACE: {workspace}")
     for stac_item in stac_items:
         try:
             # Submit an order for the given STAC item

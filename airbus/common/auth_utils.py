@@ -88,6 +88,16 @@ def get_airbus_api_key(
     plaintext_api_key = decrypt_airbus_api_key(ciphertext_b64, otp_key_b64)
 
     logging.info(f"Successfully fetched API key for {provider}")
+    
+    # Log the secret access to cloudwatch (via Lambda)
+    lambda_client = boto3.client("lambda")   
+    lambda_client.invoke(
+        FunctionName="workspace_secrets_access",
+        InvocationType="Event", 
+        Payload=json.dumps({
+        "secret_id": namespace,
+        "provider": provider
+    }))
 
     return plaintext_api_key
 

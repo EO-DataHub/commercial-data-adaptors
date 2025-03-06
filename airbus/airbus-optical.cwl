@@ -31,10 +31,6 @@ $graph:
         label: path to stac item in s3 describing data to order and download
         doc: path to stac item in s3 describing data to order and download
         type: Directory
-      workspace:
-        label: workspace final destination of the order
-        doc: workspace final destination of the order
-        type: string
     outputs:
       - id: results
         type: Directory
@@ -49,7 +45,6 @@ $graph:
           product_bundle: product_bundle
           coordinates: coordinates
           stac_key: stac_key
-          workspace: workspace
         out:
           - results
   # convert.sh - takes input args `--url`
@@ -82,11 +77,6 @@ $graph:
         inputBinding:
           prefix: --catalogue_dirs
           position: 4
-      workspace:
-        type: string
-        inputBinding:
-          prefix: --workspace
-          position: 5
 
     outputs:
       results:

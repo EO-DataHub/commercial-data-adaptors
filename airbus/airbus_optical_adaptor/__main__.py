@@ -119,8 +119,7 @@ def main(
     commercial_data_bucket: str,
     product_bundle: str,
     coordinates: List,
-    catalogue_dirs: List[str],
-    workspace: str
+    catalogue_dirs: List[str]
 ):
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
@@ -199,7 +198,6 @@ if __name__ == "__main__":
         required=True,
         help="List of catalogue directories",
     )
-    parser.add_argument("--workspace", type=str, required=True, help="Target workspace the order will be sent to")
 
     args = parser.parse_args()
 
@@ -210,6 +208,5 @@ if __name__ == "__main__":
         args.commercial_data_bucket,
         args.product_bundle,
         coordinates,
-        args.catalogue_dirs,
-        args.workspace
+        args.catalogue_dirs
     )
