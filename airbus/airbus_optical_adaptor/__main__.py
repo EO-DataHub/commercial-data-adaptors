@@ -119,7 +119,7 @@ def main(
     commercial_data_bucket: str,
     product_bundle: str,
     coordinates: List,
-    catalogue_dirs: List[str]
+    catalogue_dirs: List[str],
 ):
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
@@ -153,7 +153,7 @@ def main(
                 order_options,
                 workspace,
                 stac_item.item_uuids,
-                workspace
+                workspace,
             )
         except Exception as e:
             logging.error(f"Failed to submit order: {e}", exc_info=True)
@@ -208,5 +208,5 @@ if __name__ == "__main__":
         args.commercial_data_bucket,
         args.product_bundle,
         coordinates,
-        args.catalogue_dirs
+        args.catalogue_dirs,
     )

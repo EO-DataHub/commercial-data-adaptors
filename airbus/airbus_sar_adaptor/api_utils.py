@@ -73,7 +73,9 @@ def post_items_status(workspace: str, env: str = "prod") -> dict:
     return body
 
 
-def is_order_in_progress(acquisition_id: str, workspace: str, env: str = "prod") -> bool:
+def is_order_in_progress(
+    acquisition_id: str, workspace: str, env: str = "prod"
+) -> bool:
     """Check if an order for a SAR acquisition is in progress"""
     status = post_items_status(workspace, env)
     for feature in status:

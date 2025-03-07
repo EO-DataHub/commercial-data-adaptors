@@ -3,9 +3,9 @@ import json
 import logging
 
 import boto3
+import planet
 from kubernetes import client, config
 
-import planet
 
 def decrypt_planet_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
     """
@@ -30,7 +30,9 @@ def decrypt_planet_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
         return plaintext_bytes.decode("utf-8")
 
     except UnicodeDecodeError:
-        logging.error("Warning: Decrypted data is not valid UTF-8. Returning raw bytes.")
+        logging.error(
+            "Warning: Decrypted data is not valid UTF-8. Returning raw bytes."
+        )
         return plaintext_bytes.hex()
     except ValueError as e:
         logging.error(f"Integrity check failed: {e}")
@@ -40,10 +42,7 @@ def decrypt_planet_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
         return None
 
 
-
-def get_planet_api_key(
-    workspace: str
-) -> str:
+def get_planet_api_key(workspace: str) -> str:
     """
     Retrieve an OTP (One-Time Pad) from Kubernetes Secrets and use it to decrypt
     an encrypted API key stored in AWS Secrets Manager.
@@ -64,33 +63,38 @@ def get_planet_api_key(
 
     # Retrieve the OTP key from Kubernetes Secrets
     logging.info("Fetching OTP key from Kubernetes...")
-    secret_data = v1.read_namespaced_secret(f'otp-{provider}', namespace)
-    otp_key_b64 = secret_data.data.get('otp')  # Adjusted key name for OTP
+    secret_data = v1.read_namespaced_secret(f"otp-{provider}", namespace)
+    otp_key_b64 = secret_data.data.get("otp")  # Adjusted key name for OTP
 
     if not otp_key_b64:
-        raise ValueError(f"OTP key not found in Kubernetes Secret in namespace {namespace}.")
+        raise ValueError(
+            f"OTP key not found in Kubernetes Secret in namespace {namespace}."
+        )
 
     # Initialize AWS Secrets Manager client and fetch the provider's ciphertext
-    logging.info(f"Fetching ciphertext for provider '{provider}' from AWS Secrets Manager...")
-    secrets_client = boto3.client('secretsmanager')
+    logging.info(
+        f"Fetching ciphertext for provider '{provider}' from AWS Secrets Manager..."
+    )
+    secrets_client = boto3.client("secretsmanager")
     response = secrets_client.get_secret_value(SecretId=namespace)
 
     # Extract the secret string and parse it as JSON
     secret_string = response.get("SecretString", "{}")
     secret_dict = json.loads(secret_string)
-    
+
     # Retrieve the encrypted API key (Base64 encoded ciphertext)
     ciphertext_b64 = secret_dict.get(provider)
     if not ciphertext_b64:
-        raise ValueError(f"Ciphertext (encrypted API key) not found in AWS Secrets Manager for provider {provider}.")
-    
+        raise ValueError(
+            f"Ciphertext (encrypted API key) not found in AWS Secrets Manager for provider {provider}."
+        )
+
     # Decrypt the API key using the OTP key
     plaintext_api_key = decrypt_planet_api_key(ciphertext_b64, otp_key_b64)
 
     logging.info(f"Successfully fetched API key for {provider}")
 
     return plaintext_api_key
-
 
 
 def get_aws_api_key_from_secret(
