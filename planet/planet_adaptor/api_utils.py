@@ -3,8 +3,9 @@ import json
 import logging
 
 import boto3
-import planet
 from kubernetes import client, config
+
+import planet
 
 
 def decrypt_planet_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
