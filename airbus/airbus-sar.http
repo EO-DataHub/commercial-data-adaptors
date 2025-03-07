@@ -1,5 +1,5 @@
 ## Before attempting to run please provide your API Token in the following variable. You can generate this from the Hub website: https://test.eodatahub.org.uk/workspaces/
-@apiToken=454f4448710459cfbdf22655ea870981
+@apiToken=<apiToken>
 
 @scheme = https
 @ades=dev3.eodatahub.org.uk/ades
@@ -97,17 +97,3 @@ Accept: application/json
 GET {{scheme}}://{{ades}}/airbus/ogc-api/jobs HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
-
-###
-
-
-### POST Commercial Data for User Datasets
-POST https://dev3.eodatahub.org.uk/api/catalogue/manage/catalogs/user-datasets/jlangstone-tpzuk/commercial-data HTTP/1.1
-Accept: application/json
-Content-Type: application/json
-Authorization: Bearer 454f44488a3f0eaa0c45e1f517fa7781
-
-{
-  "url": "https://dev3.eodatahub.org.uk/api/catalogue/stac/catalogs/supported-datasets/catalogs/airbus/collections/airbus_sar_data/items/TSX-1_SM_S_strip_012R_4076_D30337345_35545",
-  "product_bundle": "general_use"
-}
