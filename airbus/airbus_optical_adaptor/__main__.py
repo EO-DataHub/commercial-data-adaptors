@@ -131,6 +131,7 @@ def main(
     logging.info(f"Coordinates: {coordinates}")
     if not verify_coordinates(coordinates):
         raise ValueError(f"Invalid coordinates: {coordinates}")
+    logging.info(f"Target workspace: {workspace}")
 
     for stac_item in stac_items:
         try:
