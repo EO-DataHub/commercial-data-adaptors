@@ -152,8 +152,7 @@ def main(
                 coordinates,
                 order_options,
                 workspace,
-                stac_item.item_uuids,
-                workspace,
+                stac_item.item_uuids
             )
         except Exception as e:
             logging.error(f"Failed to submit order: {e}", exc_info=True)

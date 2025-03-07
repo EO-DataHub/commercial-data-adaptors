@@ -98,24 +98,3 @@ GET {{scheme}}://{{ades}}/airbus/ogc-api/jobs HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
-
-### POST request to API
-
-POST https://dev3.eodatahub.org.uk/api/catalogue/manage/catalogs/user-datasets/jlangstone-tpzuk/commercial-data
-Accept: application/json
-Content-Type: application/json
-Authorization: Bearer 454f44488a3f0eaa0c45e1f517fa7781
-
-{
-  "url": "https://staging.eodatahub.org.uk/api/catalogue/stac/catalogs/supported-datasets/catalogs/airbus/collections/airbus_spot_data/items/DS_SPOT6_202502191321230_FR1_FR1_SV1_SV1_W052S19_01627",
-  "product_bundle": "general_use",
-  "coordinates": [
-    [
-      [-52.55, -19],
-      [-52.5, -19],
-      [-52.5, -19.03],
-      [-52.55, -19.03],
-      [-52.55, -19]
-    ]
-  ]
-}
