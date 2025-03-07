@@ -12,7 +12,8 @@ from typing import List
 from planet_adaptor.api_utils import (
     create_order_request,
     define_delivery,
-    get_api_key_from_secret,
+    get_aws_api_key_from_secret,
+    get_planet_api_key,
     submit_order,
 )
 from planet_adaptor.s3_utils import (
@@ -87,8 +88,8 @@ def update_stac_item_failure(stac_item: dict, file_name: str, order_name: str) -
     write_stac_item_and_catalog(stac_item, file_name, order_name)
 
 
-async def get_existing_order_details(order_name) -> dict:
-    planet_api_key = get_api_key_from_secret("api-keys", "planet-key")
+async def get_existing_order_details(workspace, order_name) -> dict:
+    planet_api_key = get_planet_api_key(workspace)
     auth = planet.Auth.from_key(planet_api_key)
 
     session = planet.Session(auth=auth)
@@ -104,10 +105,10 @@ def get_credentials() -> dict:
     """Get AWS credentials for delivery of Planet data"""
 
     return {
-        "AccessKeyId": get_api_key_from_secret(
+        "AccessKeyId": get_aws_api_key_from_secret(
             "planet-aws-access-key-id", "planet-aws-access-key-id"
         ),
-        "SecretAccessKey": get_api_key_from_secret(
+        "SecretAccessKey": get_aws_api_key_from_secret(
             "planet-aws-secret-access-key", "planet-aws-secret-access-key"
         ),
     }
@@ -182,7 +183,7 @@ def main(
                 f"Ordering stac item {stac_item.item_id} in {stac_item.collection_id}"
             )
 
-            order = asyncio.run(get_existing_order_details(order_name))
+            order = asyncio.run(get_existing_order_details(workspace, order_name))
             logging.info(f"Existing order: {order}")
 
             order_status = order.get("state")
@@ -210,9 +211,9 @@ def main(
                     coordinates,
                 )
 
-                asyncio.run(submit_order(order_request))
+                asyncio.run(submit_order(workspace, order_request))
 
-                order = asyncio.run(get_existing_order_details(order_name))
+                order = asyncio.run(get_existing_order_details(workspace, order_name))
 
             order_id = order.get("id")
             logging.info(f"Found order ID {order_id}")

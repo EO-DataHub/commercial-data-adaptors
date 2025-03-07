@@ -76,7 +76,7 @@ $graph:
         type: Directory
         inputBinding:
           prefix: --catalogue_dirs
-          position: 5
+          position: 4
 
     outputs:
       results:

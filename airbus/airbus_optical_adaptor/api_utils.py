@@ -99,7 +99,7 @@ def post_submit_order(
 
     logging.info(f"Sending POST request to submit an order with {request_body}")
 
-    access_token = generate_access_token()
+    access_token = generate_access_token(workspace)
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",

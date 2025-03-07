@@ -72,6 +72,7 @@ def main(
     product_bundle: str,
     coordinates: List,
     catalogue_dirs: List[str],
+    workspace: str,
 ):
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
@@ -84,13 +85,15 @@ def main(
         try:
             # Submit an order for the given STAC item
             logging.info(f"Ordering STAC item {stac_item.acquisition_id}")
-            if is_order_in_progress(stac_item.acquisition_id):
+            if is_order_in_progress(stac_item.acquisition_id, workspace):
                 logging.info(
                     f"Order for {stac_item.acquisition_id} is already in progress"
                 )
                 update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
                 return
-            order_id = post_submit_order(stac_item.acquisition_id, order_options)
+            order_id = post_submit_order(
+                stac_item.acquisition_id, order_options, workspace
+            )
             order_id = order_id.split("_")[0]
         except Exception as e:
             logging.error(f"Failed to submit order: {e}", exc_info=True)
@@ -130,6 +133,12 @@ if __name__ == "__main__":
         required=True,
         help="List of catalogue directories",
     )
+    parser.add_argument(
+        "--workspace",
+        type=str,
+        required=True,
+        help="Target workspace the order will be sent to",
+    )
 
     args = parser.parse_args()
 
@@ -140,4 +149,5 @@ if __name__ == "__main__":
         args.product_bundle,
         coordinates,
         args.catalogue_dirs,
+        args.workspace,
     )
