@@ -140,7 +140,7 @@ def main(
                     f"Order for {stac_item.acquisition_id} is already in progress"
                 )
                 # Unable to obtain the item_id again, so cannot wait for data. Fail the order.
-                update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
+                update_stac_item_failure(stac_item.stac_json, stac_item.file_name, stac_item.collection_id)
                 return
             if not coordinates:
                 # Limit order by an AOI if provided
@@ -155,7 +155,7 @@ def main(
             )
         except Exception as e:
             logging.error(f"Failed to submit order: {e}", exc_info=True)
-            update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
+            update_stac_item_failure(stac_item.stac_json, stac_item.file_name, stac_item.collection_id)
             return
         try:
             # Wait for data from airbus to arrive, then download it
@@ -173,10 +173,10 @@ def main(
                 )
         except Exception as e:
             logging.error(f"Failed to retrieve data: {e}", exc_info=True)
-            update_stac_item_failure(stac_item.stac_json, stac_item.file_name, order_id)
+            update_stac_item_failure(stac_item.stac_json, stac_item.file_name, stac_item.collection_id, order_id)
             return
         update_stac_item_success(
-            stac_item.stac_json, stac_item.file_name, order_id, "assets"
+            stac_item.stac_json, stac_item.file_name, stac_item.collection_id, order_id, "assets"
         )
 
 

@@ -28,7 +28,7 @@ def retrieve_stac_item(file_path: str) -> dict:
     return stac_item
 
 
-def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, item_id: str):
+def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, collection_id: str, item_id: str):
     """Creates local catalog containing final STAC item to be used as a record for the order"""
     # Rewrite STAC links to point to local files only
     stac_item["links"] = [
@@ -51,10 +51,10 @@ def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, item_i
         "stac_version": "1.0.0",
         "id": "catalog",
         "type": "Catalog",
-        "description": f"Root catalog for order {stac_item_filename}-{item_id}",
+        "description": "Purchased Airbus satellite imagery, including both completed purchases and ongoing order records",
         "links": [
             {"rel": "self", "href": "catalog.json", "type": "application/json"},
-            {"rel": "item", "href": stac_item_filename, "type": "application/json"},
+            {"rel": "child", "href": "collection.json", "type": "application/json"},
         ],
     }
 
@@ -63,6 +63,24 @@ def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, item_i
         json.dump(stac_catalog, f, indent=2)
     logging.info("Created STAC catalog catalog.json locally.")
     logging.debug(f"STAC catalog: {stac_catalog}")
+
+    stac_collection = {
+        "id": collection_id,
+        "type": "Collection",
+        "description": f"Purchased {collection_id.capitalize().replace("_", " ")} satellite imagery, including both completed purchases and ongoing order records",
+        "links": [
+            {"rel": "self", "href": "collection.json", "type": "application/json"},
+            {"rel": "root", "href": "catalog.json", "type": "application/json"},
+            {"rel": "parent", "href": "catalog.json", "type": "application/json"},
+            {"rel": "item", "href": stac_item_filename, "type": "application/json"},
+        ],
+    }
+
+    # Write the STAC catalog to a file
+    with open("collection.json", "w") as f:
+        json.dump(stac_collection, f, indent=2)
+    logging.info("Created STAC collection collection.json locally.")
+    logging.debug(f"STAC collection: {stac_collection}")
 
 
 def update_stac_order_status(stac_item: dict, item_id: str, order_status: str):
@@ -98,18 +116,18 @@ def get_key_from_stac(stac_item: dict, key: str):
 
 
 def update_stac_item_failure(
-    stac_item: dict, file_name: str, order_id: str = None
+    stac_item: dict, file_name: str, collection_id: str, order_id: str = None
 ) -> None:
     """Update the STAC item with the failure order status"""
     # Mark the order as failed in the local STAC item
     update_stac_order_status(stac_item, order_id, OrderStatus.FAILED.value)
 
     # Create local record of attempted order, to be used as the workflow output
-    write_stac_item_and_catalog(stac_item, file_name, order_id)
+    write_stac_item_and_catalog(stac_item, file_name, collection_id, order_id)
 
 
 def update_stac_item_success(
-    stac_item: dict, file_name: str, order_id: str, directory: str
+    stac_item: dict, file_name: str, collection_id, order_id: str, directory: str
 ):
     """Update the STAC item with the assets and success order status"""
     # Add all files in the directory as assets to the STAC item
@@ -132,7 +150,7 @@ def update_stac_item_success(
     update_stac_order_status(stac_item, order_id, OrderStatus.SUCCEEDED.value)
 
     # Create local record of the order, to be used as the workflow output
-    write_stac_item_and_catalog(stac_item, file_name, order_id)
+    write_stac_item_and_catalog(stac_item, file_name, collection_id, order_id)
 
 
 def get_item_hrefs_from_catalogue(catalogue_dir: str) -> list:
