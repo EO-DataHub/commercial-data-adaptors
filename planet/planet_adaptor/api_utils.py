@@ -1,11 +1,11 @@
 import base64
-import boto3
-import logging
 import json
+import logging
+
+import boto3
 from kubernetes import client, config
 
 import planet
-
 
 def decrypt_planet_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
     """
@@ -88,16 +88,6 @@ def get_planet_api_key(
     plaintext_api_key = decrypt_planet_api_key(ciphertext_b64, otp_key_b64)
 
     logging.info(f"Successfully fetched API key for {provider}")
-
-    # Log the secret access to cloudwatch (via Lambda)
-    lambda_client = boto3.client("lambda")   
-    lambda_client.invoke(
-        FunctionName="workspace_secrets_access",
-        InvocationType="Event", 
-        Payload=json.dumps({
-        "secret_id": namespace,
-        "provider": provider
-    }))
 
     return plaintext_api_key
 
