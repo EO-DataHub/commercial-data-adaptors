@@ -51,11 +51,11 @@ class OrderStatus(Enum):
 product_bundle_map = {
     "PSScene": {
         "visual": "visual",
-        "general": "analytic_sr_udm2",
-        "analytic": "analytic_sr_udm2",
-        "basic": "basic_analytic_udm2",
+        "general": "analytic_8b_udm2,analytic_udm2",
+        "analytic": "analytic_8b_sr_udm2,analytic_sr_udm2",
+        "basic": "basic_analytic_8b_udm2,basic_analytic_udm2",
     },
-    "SkySat": {
+    "SkySatCollect": {
         "visual": "visual",
         "general": "pansharpened_udm2",
         "analytic": "analytic_sr_udm2",
@@ -190,6 +190,7 @@ def main(
 
         try:
             product_bundle = product_bundle_map[collection_id][product_bundle_category]
+
         except KeyError:
             raise NotImplementedError(
                 f"Product bundle {product_bundle_category} is not valid. Currently implemented bundles are "
