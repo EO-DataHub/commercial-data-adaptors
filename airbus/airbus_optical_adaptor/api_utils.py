@@ -75,7 +75,7 @@ def post_submit_order(
                     {"key": "priority", "value": "standard"},
                     {
                         "key": "processing_level",
-                        "value": order_options.get("processing_level"),
+                        "value": order_options.get("processingLevel"),
                     },
                     {
                         "key": "radiometric_processing",

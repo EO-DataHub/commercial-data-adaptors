@@ -103,25 +103,25 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
 product_bundle_map = {
     "visual": {
         "productBundle": "visual",
-        "processing_level": "ortho",
+        "processingLevel": "ortho",
         "pixelCoding": "8bits",
         "radiometricProcessing": "display",
     },
     "general": {
         "productBundle": "general",
-        "processing_level": "ortho",
+        "processingLevel": "ortho",
         "pixelCoding": "16bits",
         "radiometricProcessing": "reflectance",
     },
     "analytic": {
         "productBundle": "analytic",
-        "processing_level": "ortho",
+        "processingLevel": "ortho",
         "pixelCoding": "16bits",
         "radiometricProcessing": "reflectance",
     },
     "basic": {
         "productBundle": "basic",
-        "processing_level": "primary",
+        "processingLevel": "primary",
         "pixelCoding": "16bits",
         "radiometricProcessing": "basic",
     },
