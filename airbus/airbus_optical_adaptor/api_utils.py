@@ -71,9 +71,9 @@ def post_submit_order(
                     {"key": "fullStrip", "value": "false"},
                     {"key": "image_format", "value": "dimap_geotiff"},
                     {"key": "licence", "value": "standard"},
-                    {"key": "pixel_coding", "value": "12bits"},
+                    {"key": "pixel_coding", "value": order_options.get("pixelCoding")},
                     {"key": "priority", "value": "standard"},
-                    {"key": "processing_level", "value": "primary"},
+                    {"key": "processing_level", "value": order_options.get("processing_level")},
                     {
                         "key": "radiometric_processing",
                         "value": order_options.get("radiometricProcessing"),
