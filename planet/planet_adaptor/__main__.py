@@ -60,7 +60,7 @@ product_bundle_map = {
         "general": "pansharpened_udm2",
         "analytic": "analytic_sr_udm2",
         "basic": "basic_analytic_udm2",
-    }
+    },
 }
 
 
@@ -182,7 +182,7 @@ def main(
 
     for stac_item in stac_items:
         collection_id = stac_item.collection_id
-        if not collection_id in product_bundle_map.keys():
+        if collection_id not in product_bundle_map.keys():
             raise NotImplementedError(
                 f"Collection {collection_id} is not valid. Currently implemented collections are "
                 f"{product_bundle_map.keys()}"
@@ -211,9 +211,7 @@ def main(
 
         try:
             # Submit an order for the given STAC item
-            logging.info(
-                f"Ordering stac item {stac_item.item_id} in {collection_id}"
-            )
+            logging.info(f"Ordering stac item {stac_item.item_id} in {collection_id}")
 
             order = asyncio.run(get_existing_order_details(workspace, order_name))
             logging.info(f"Existing order: {order}")
