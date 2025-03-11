@@ -98,7 +98,7 @@ def post_submit_order(
     if item_id:
         request_body["items"][0]["datastripIds"] = [item_id]
 
-    if end_users and collection_id == "airbus_pneo_data":
+    if end_users:
         request_body["endUsers"] = end_users
 
     logging.info(f"Sending POST request to submit an order with {request_body}")
