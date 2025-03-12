@@ -28,7 +28,9 @@ def retrieve_stac_item(file_path: str) -> dict:
     return stac_item
 
 
-def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, collection_id: str, item_id: str):
+def write_stac_item_and_catalog(
+    stac_item: dict, stac_item_filename: str, collection_id: str, item_id: str
+):
     """Creates local catalog containing final STAC item to be used as a record for the order"""
     # Rewrite STAC links to point to local files only
     stac_item["links"] = [
@@ -67,7 +69,7 @@ def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, collec
     stac_collection = {
         "id": collection_id,
         "type": "Collection",
-        "description": f"Purchased {collection_id.capitalize().replace("_", " ")} satellite imagery, including both completed purchases and ongoing order records",
+        "description": f"Purchased {collection_id.capitalize().replace('_', ' ')} satellite imagery, including both completed purchases and ongoing order records",
         "links": [
             {"rel": "self", "href": "collection.json", "type": "application/json"},
             {"rel": "root", "href": "catalog.json", "type": "application/json"},
