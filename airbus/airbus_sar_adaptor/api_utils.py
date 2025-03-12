@@ -17,7 +17,7 @@ def post_submit_order(
         "acquisitions": [acquisition_id],
         "orderTemplate": order_options.get("orderTemplate"),
         "orderOptions": {
-            "productType": order_options.get("productBundle"),
+            "productType": order_options.get("productType"),
             "resolutionVariant": order_options.get("resolution"),
             "orbitType": order_options.get("orbit"),
             "mapProjection": order_options.get("mapProjection"),
