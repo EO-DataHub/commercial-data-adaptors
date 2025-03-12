@@ -23,6 +23,34 @@ logging.basicConfig(
 )
 
 
+product_bundle_map = {
+    "visual": {
+        "productBundle": "visual",
+        "processingLevel": "ortho",
+        "pixelCoding": "8bits",
+        "radiometricProcessing": "display",
+    },
+    "general": {
+        "productBundle": "general",
+        "processingLevel": "ortho",
+        "pixelCoding": "16bits",
+        "radiometricProcessing": "reflectance",
+    },
+    "analytic": {
+        "productBundle": "analytic",
+        "processingLevel": "ortho",
+        "pixelCoding": "16bits",
+        "radiometricProcessing": "reflectance",
+    },
+    "basic": {
+        "productBundle": "basic",
+        "processingLevel": "primary",
+        "pixelCoding": "16bits",
+        "radiometricProcessing": "basic",
+    },
+}
+
+
 class STACItem:
     """Class to represent a STAC item and its properties"""
 
@@ -99,33 +127,6 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
 
     return stac_items
 
-
-product_bundle_map = {
-    "visual": {
-        "productBundle": "visual",
-        "processingLevel": "ortho",
-        "pixelCoding": "8bits",
-        "radiometricProcessing": "display",
-    },
-    "general": {
-        "productBundle": "general",
-        "processingLevel": "ortho",
-        "pixelCoding": "16bits",
-        "radiometricProcessing": "reflectance",
-    },
-    "analytic": {
-        "productBundle": "analytic",
-        "processingLevel": "ortho",
-        "pixelCoding": "16bits",
-        "radiometricProcessing": "reflectance",
-    },
-    "basic": {
-        "productBundle": "basic",
-        "processingLevel": "primary",
-        "pixelCoding": "16bits",
-        "radiometricProcessing": "basic",
-    },
-}
 
 
 def get_order_options(product_bundle: str) -> dict:

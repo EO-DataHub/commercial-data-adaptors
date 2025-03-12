@@ -53,16 +53,33 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
     return stac_items
 
 
-def get_order_options(product_bundle: str) -> dict:
+def get_order_options(product_bundle: str, orbit: str, resolution: str, map_projection: str) -> dict:
     """Return the order options for the given product bundle"""
-    # TODO: Expand and implement different options based on product bundle
-    available_bundles = ["general_use"]
+    available_bundles = ["ssc", "mgd", "gec", "eec"]
+    available_orbits = ["rapid", "science"]
+    available_resolutions = ["radiometricallyEnhanced", "spatiallyEnhanced"]
+    available_map_projections = ["auto", "utm", "ups"]
     if product_bundle not in available_bundles:
         raise NotImplementedError(
             f"Product bundle {product_bundle} is not valid. Currently implemented bundles are {available_bundles}"
         )
+    if orbit not in available_orbits:
+        raise NotImplementedError(
+            f"Orbit {orbit} is not valid. Currently implemented orbits are {available_orbits}"
+        )
+    if resolution not in available_resolutions:
+        raise NotImplementedError(
+            f"Resolution {resolution} is not valid. Currently implemented resolutions are {available_resolutions}"
+        )
+    if map_projection not in available_map_projections:
+        raise NotImplementedError(
+            f"Map projection {resolution} is not valid. Currently implemented map projections are {available_map_projections}"
+        )
     return {
         "productBundle": product_bundle,
+        "orbit": orbit,
+        "resolution": resolution,
+        "mapProjection": map_projection,
         "orderTemplate": "Ordering",
     }
 
@@ -77,7 +94,11 @@ def main(
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
     logging.info(f"Ordering items in catalogues from stage in: {catalogue_dirs}")
-    order_options = get_order_options(product_bundle)
+    order_options = get_order_options(product_bundle=product_bundle,
+                                      map_projection=projection,
+                                      orbit=orbit,
+                                      resolution=resolution
+                                      )
     logging.info(f"Order options: {order_options}")
     stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
 
