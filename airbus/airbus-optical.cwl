@@ -31,6 +31,10 @@ $graph:
         label: path to stac item in s3 describing data to order and download
         doc: path to stac item in s3 describing data to order and download
         type: Directory
+      end_users:
+        label: List of end users and nationalities. Only required for PNEO orders
+        doc: List of end users and nationalities. Only required for PNEO orders
+        type: string
     outputs:
       - id: results
         type: Directory
@@ -45,6 +49,7 @@ $graph:
           product_bundle: product_bundle
           coordinates: coordinates
           stac_key: stac_key
+          end_users: end_users
         out:
           - results
   # convert.sh - takes input args `--url`
@@ -52,7 +57,7 @@ $graph:
     id: airbus-optical-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/airbus-optical-adaptor:0.0.3-rc3
+        dockerPull: public.ecr.aws/eodh/airbus-optical-adaptor:0.0.3-rc4
     baseCommand: ["python", "-m", "airbus_optical_adaptor"]
     inputs:
       workspace:
@@ -76,7 +81,12 @@ $graph:
         type: Directory
         inputBinding:
           prefix: --catalogue_dirs
-          position: 4
+          position: 5
+      end_users:
+        type: string
+        inputBinding:
+          prefix: --end_users
+          position: 6
 
     outputs:
       results:
