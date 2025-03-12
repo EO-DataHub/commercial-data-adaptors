@@ -2,7 +2,7 @@ import argparse
 import json
 import logging
 import os
-from typing import List
+from typing import Dict, List, Optional
 
 from airbus_optical_adaptor.api_utils import post_submit_order
 from common.s3_utils import download_and_store_locally, poll_s3_for_data
@@ -120,6 +120,7 @@ def main(
     product_bundle: str,
     coordinates: List,
     catalogue_dirs: List[str],
+    end_users: Optional[List[Dict[str, str]]] = None,
 ):
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
@@ -130,6 +131,7 @@ def main(
     logging.info(f"Coordinates: {coordinates}")
     if not verify_coordinates(coordinates):
         raise ValueError(f"Invalid coordinates: {coordinates}")
+    logging.info(f"Target workspace: {workspace}")
 
     for stac_item in stac_items:
         try:
@@ -152,6 +154,7 @@ def main(
                 order_options,
                 workspace,
                 stac_item.item_uuids,
+                end_users,
             )
         except Exception as e:
             logging.error(f"Failed to submit order: {e}", exc_info=True)
@@ -196,10 +199,17 @@ if __name__ == "__main__":
         required=True,
         help="List of catalogue directories",
     )
+    parser.add_argument(
+        "--end_users",
+        type=str,
+        required=True,
+        help="Stringified list of end user names and countries",
+    )
 
     args = parser.parse_args()
 
     coordinates = json.loads(args.coordinates)
+    end_users = json.loads(args.end_users) if args.end_users else None
 
     main(
         args.workspace,
@@ -207,4 +217,5 @@ if __name__ == "__main__":
         args.product_bundle,
         coordinates,
         args.catalogue_dirs,
+        end_users,
     )

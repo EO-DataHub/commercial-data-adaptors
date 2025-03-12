@@ -12,6 +12,7 @@ def post_submit_order(
     order_options: dict,
     workspace: str,
     item_uuids: list = None,
+    end_users: list = None,
 ) -> str:
     """Submit an order for an optical acquisition via POST request"""
     url = "https://order.api.oneatlas.airbus.com/api/v1/orders"
@@ -97,9 +98,12 @@ def post_submit_order(
     if item_id:
         request_body["items"][0]["datastripIds"] = [item_id]
 
+    if end_users:
+        request_body["endUsers"] = end_users
+
     logging.info(f"Sending POST request to submit an order with {request_body}")
 
-    access_token = generate_access_token()
+    access_token = generate_access_token(workspace)
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",

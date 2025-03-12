@@ -179,17 +179,17 @@ def is_valid_coordinate(coordinate: Coordinate) -> bool:
             f"Invalid coordinate format: {coordinate}, type: {type(coordinate)}, length: {len(coordinate)}"
         )
         return False
-    latitude, longitude = coordinate
+    longitude, latitude = coordinate
     if not isinstance(latitude, (int, float)) or not isinstance(
         longitude, (int, float)
     ):
         logging.warning(
-            f"Invalid coordinate type. {latitude}: {type(latitude)}, {longitude}: {type(longitude)}"
+            f"Invalid coordinate type. {longitude}: {type(longitude)}, {latitude}: {type(latitude)}"
         )
         return False
     if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
         logging.warning(
-            f"Invalid coordinate value: latitude={latitude}, longitude={longitude}"
+            f"Invalid coordinate value: longitude={longitude}, latitude={latitude}"
         )
         return False
     return True
