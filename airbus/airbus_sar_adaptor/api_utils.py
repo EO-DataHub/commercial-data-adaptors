@@ -13,16 +13,21 @@ def post_submit_order(
     else:
         url = "https://dev.sar.api.oneatlas.airbus.com"
 
+    item_options = {
+        "productType": order_options.get("productType"),
+        "orbitType": order_options.get("orbit"),
+        "gainAttenuation": 0,
+    }
+    if map_projection := order_options.get("mapProjection"):
+        item_options["mapProjection"] = map_projection
+
+    if resolution := order_options.get("resolution"):
+        item_options["resolutionVariant"] = resolution
+
     body = {
         "acquisitions": [acquisition_id],
         "orderTemplate": order_options.get("orderTemplate"),
-        "orderOptions": {
-            "productType": "MGD",
-            "resolutionVariant": "RE",
-            "orbitType": "science",
-            "mapProjection": "auto",
-            "gainAttenuation": 0,
-        },
+        "orderOptions": item_options,
         "purpose": "IT Service Company",
     }
 
@@ -34,10 +39,11 @@ def post_submit_order(
         "Content-Type": "application/json",
     }
 
-    response = requests.post(f"{url}/v1/sar/orders/submit", json=body, headers=headers)
-    response.raise_for_status()
-
-    body = response.json()
+    logging.info(body)
+    # response = requests.post(f"{url}/v1/sar/orders/submit", json=body, headers=headers)
+    # response.raise_for_status()
+    #
+    # body = response.json()
     logging.info(f"Order submitted: {body}")
     for feature in body["features"]:
         if feature["properties"]["acquisitionId"] == acquisition_id:
