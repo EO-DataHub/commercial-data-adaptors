@@ -24,25 +24,25 @@ logging.basicConfig(
 
 
 product_bundle_map = {
-    "visual": {
+    "Visual": {
         "productBundle": "visual",
         "processingLevel": "ortho",
         "pixelCoding": "8bits",
         "radiometricProcessing": "display",
     },
-    "general": {
+    "General use": {
         "productBundle": "general",
         "processingLevel": "ortho",
         "pixelCoding": "16bits",
         "radiometricProcessing": "reflectance",
     },
-    "analytic": {
+    "Analytic": {
         "productBundle": "analytic",
         "processingLevel": "ortho",
         "pixelCoding": "16bits",
         "radiometricProcessing": "reflectance",
     },
-    "basic": {
+    "Basic": {
         "productBundle": "basic",
         "processingLevel": "primary",
         "pixelCoding": "16bits",
@@ -132,7 +132,7 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
 def get_order_options(product_bundle: str) -> dict:
     """Return the order options for the given product bundle"""
     # TODO: Expand and implement different options based on product bundle
-    available_bundles = ["general", "visual", "analytic", "basic"]
+    available_bundles = ["General use", "Visual", "Analytic", "Basic"]
     if product_bundle not in available_bundles:
         raise NotImplementedError(
             f"Product bundle {product_bundle} is not valid. Currently implemented bundles are {available_bundles}"
