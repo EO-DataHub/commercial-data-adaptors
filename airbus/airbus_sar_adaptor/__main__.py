@@ -55,9 +55,9 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
 
 def get_order_options(product_type: str, orbit: str, resolution: str, map_projection: str) -> dict:
     """Return the order options for the given product bundle"""
-    available_types = ["ssc", "mgd", "gec", "eec"]
+    available_types = ["SCC", "MGD", "GEC", "EEC"]
     available_orbits = ["rapid", "science"]
-    available_resolutions = ["radiometricallyEnhanced", "spatiallyEnhanced"]
+    available_resolutions = ["RE", "SE"]
     available_map_projections = ["auto", "utm", "ups"]
     if product_type not in available_types:
         raise NotImplementedError(
