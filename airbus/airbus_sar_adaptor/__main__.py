@@ -53,7 +53,9 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
     return stac_items
 
 
-def get_order_options(product_type: str, orbit: str, resolution: str, map_projection: str) -> dict:
+def get_order_options(
+    product_type: str, orbit: str, resolution: str, map_projection: str
+) -> dict:
     """Return the order options for the given product bundle"""
     available_types = ["SSC", "MGD", "GEC", "EEC"]
     available_orbits = ["rapid", "science"]
@@ -109,7 +111,7 @@ def main(
         product_type=product_bundle.get("product_type"),
         map_projection=product_bundle.get("projection"),
         orbit=product_bundle.get("orbit"),
-        resolution=product_bundle.get("resolution")
+        resolution=product_bundle.get("resolution"),
     )
     logging.info(f"Order options: {order_options}")
     stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)

@@ -128,7 +128,6 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
     return stac_items
 
 
-
 def get_order_options(product_bundle: str) -> dict:
     """Return the order options for the given product bundle"""
     # TODO: Expand and implement different options based on product bundle
