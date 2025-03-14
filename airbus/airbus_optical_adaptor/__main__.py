@@ -138,12 +138,14 @@ def main(
             # Submit an order for the given STAC item
             logging.info(f"Ordering STAC item {stac_item.acquisition_id}")
             if stac_item.order_status == OrderStatus.ORDERED.value:
-                logging.info(
-                    f"Order for {stac_item.acquisition_id} is already in progress"
-                )
+                reason = f"Order for {stac_item.acquisition_id} is already in progress"
+                logging.error(reason)
                 # Unable to obtain the item_id again, so cannot wait for data. Fail the order.
                 update_stac_item_failure(
-                    stac_item.stac_json, stac_item.file_name, stac_item.collection_id
+                    stac_item.stac_json,
+                    stac_item.file_name,
+                    stac_item.collection_id,
+                    reason,
                 )
                 return
             if not coordinates:
@@ -159,9 +161,13 @@ def main(
                 end_users,
             )
         except Exception as e:
-            logging.error(f"Failed to submit order: {e}", exc_info=True)
+            reason = f"Failed to submit order: {e}"
+            logging.error(reason, exc_info=True)
             update_stac_item_failure(
-                stac_item.stac_json, stac_item.file_name, stac_item.collection_id
+                stac_item.stac_json,
+                stac_item.file_name,
+                stac_item.collection_id,
+                reason,
             )
             return
         try:
@@ -179,11 +185,13 @@ def main(
                     "assets",
                 )
         except Exception as e:
-            logging.error(f"Failed to retrieve data: {e}", exc_info=True)
+            reason = f"Failed to retrieve data: {e}"
+            logging.error(reason, exc_info=True)
             update_stac_item_failure(
                 stac_item.stac_json,
                 stac_item.file_name,
                 stac_item.collection_id,
+                reason,
                 order_id,
             )
             return

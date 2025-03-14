@@ -85,14 +85,14 @@ def write_stac_item_and_catalog(
     logging.debug(f"STAC collection: {stac_collection}")
 
 
-def update_stac_order_status(stac_item: dict, item_id: str, order_status: str):
+def update_stac_order_status(stac_item: dict, order_id: str, order_status: str):
     """Update the STAC item with the order status using the STAC Order extension"""
     # Update or add fields relating to the order
     if "properties" not in stac_item:
         stac_item["properties"] = {}
 
-    if item_id is not None:
-        stac_item["properties"]["order.id"] = item_id
+    if order_id is not None:
+        stac_item["properties"]["order.id"] = order_id
     stac_item["properties"]["order.status"] = order_status
 
     # Update or add the STAC extension if not already present
@@ -118,11 +118,18 @@ def get_key_from_stac(stac_item: dict, key: str):
 
 
 def update_stac_item_failure(
-    stac_item: dict, file_name: str, collection_id: str, order_id: str = None
+    stac_item: dict,
+    file_name: str,
+    collection_id: str,
+    reason: str,
+    order_id: str = None,
 ) -> None:
     """Update the STAC item with the failure order status"""
     # Mark the order as failed in the local STAC item
     update_stac_order_status(stac_item, order_id, OrderStatus.FAILED.value)
+
+    # Mark the reason for the failure in the local STAC item
+    stac_item["properties"]["order_failure_reason"] = reason
 
     # Create local record of attempted order, to be used as the workflow output
     write_stac_item_and_catalog(stac_item, file_name, collection_id, order_id)

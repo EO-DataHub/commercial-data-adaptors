@@ -86,18 +86,20 @@ def main(
             # Submit an order for the given STAC item
             logging.info(f"Ordering STAC item {stac_item.acquisition_id}")
             if is_order_in_progress(stac_item.acquisition_id, workspace):
-                logging.info(
-                    f"Order for {stac_item.acquisition_id} is already in progress"
+                reason = f"Order for {stac_item.acquisition_id} is already in progress"
+                logging.error(reason)
+                update_stac_item_failure(
+                    stac_item.stac_json, stac_item.file_name, reason
                 )
-                update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
                 return
             order_id = post_submit_order(
                 stac_item.acquisition_id, order_options, workspace
             )
             order_id = order_id.split("_")[0]
         except Exception as e:
-            logging.error(f"Failed to submit order: {e}", exc_info=True)
-            update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
+            reason = f"Failed to submit order: {e}"
+            logging.error(reason, exc_info=True)
+            update_stac_item_failure(stac_item.stac_json, stac_item.file_name, reason)
             return
         try:
             # Wait for data from airbus to arrive, then move it to the workspace
@@ -110,8 +112,11 @@ def main(
                     "assets",
                 )
         except Exception as e:
-            logging.error(f"Failed to retrieve data: {e}", exc_info=True)
-            update_stac_item_failure(stac_item.stac_json, stac_item.file_name, order_id)
+            reason = f"Failed to retrieve data: {e}"
+            logging.error(reason, exc_info=True)
+            update_stac_item_failure(
+                stac_item.stac_json, stac_item.file_name, reason, order_id
+            )
             return
         update_stac_item_success(
             stac_item.stac_json, stac_item.file_name, order_id, "assets"

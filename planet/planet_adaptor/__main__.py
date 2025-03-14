@@ -79,10 +79,15 @@ def update_stac_item_success(
     logging.info(list(glob.iglob("./**/*", recursive=True)))
 
 
-def update_stac_item_failure(stac_item: dict, file_name: str, order_name: str) -> None:
+def update_stac_item_failure(
+    stac_item: dict, file_name: str, reason: str, order_name: str
+) -> None:
     """Update the STAC item with the failure order status"""
     # Mark the order as failed in the local STAC item
     update_stac_order_status(stac_item, order_name, OrderStatus.FAILED.value)
+
+    # Mark the reason for the failure in the local STAC item
+    stac_item["properties"]["order_failure_reason"] = reason
 
     # Create local record of attempted order, to be used as the workflow output
     write_stac_item_and_catalog(stac_item, file_name, order_name)
@@ -190,10 +195,11 @@ def main(
             logging.info(f"Order status: {order_status}")
             if order_status in ["queued", "running"]:
                 submitted_order_id = order.get("id")
-                logging.info(
-                    f"Order for {stac_item.item_id} has already been submitted: {submitted_order_id}"
+                reason = f"Order for {stac_item.item_id} has already been submitted: {submitted_order_id}"
+                logging.info(reason)
+                update_stac_item_failure(
+                    stac_item.stac_json, stac_item.file_name, reason, None
                 )
-                update_stac_item_failure(stac_item.stac_json, stac_item.file_name, None)
                 return
 
             if not order_status == "success":
@@ -219,9 +225,10 @@ def main(
             logging.info(f"Found order ID {order_id}")
 
         except Exception as e:
-            logging.error(f"Failed to submit order: {e}", exc_info=True)
+            reason = f"Failed to submit order: {e}"
+            logging.error(reason, exc_info=True)
             update_stac_item_failure(
-                stac_item.stac_json, stac_item.file_name, order_name
+                stac_item.stac_json, stac_item.file_name, reason, order_name
             )
             return
 
@@ -237,8 +244,11 @@ def main(
                 commercial_data_bucket, f"{delivery_folder}/{order_id}", "assets"
             )
         except Exception as e:
-            logging.error(f"Failed to retrieve data: {e}", exc_info=True)
-            update_stac_item_failure(stac_item.stac_json, stac_item.file_name, order_id)
+            reason = f"Failed to retrieve data: {e}"
+            logging.error(reason, exc_info=True)
+            update_stac_item_failure(
+                stac_item.stac_json, stac_item.file_name, reason, order_id
+            )
             return
         update_stac_item_success(
             stac_item.stac_json, stac_item.file_name, order_name, "assets"
