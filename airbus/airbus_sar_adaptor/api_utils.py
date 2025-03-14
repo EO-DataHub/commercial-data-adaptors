@@ -39,10 +39,11 @@ def post_submit_order(
         "Content-Type": "application/json",
     }
 
-    response = requests.post(f"{url}/v1/sar/orders/submit", json=body, headers=headers)
-    response.raise_for_status()
-
-    body = response.json()
+    logging.info(body)
+    # response = requests.post(f"{url}/v1/sar/orders/submit", json=body, headers=headers)
+    # response.raise_for_status()
+    #
+    # body = response.json()
     logging.info(f"Order submitted: {body}")
     for feature in body["features"]:
         if feature["properties"]["acquisitionId"] == acquisition_id:

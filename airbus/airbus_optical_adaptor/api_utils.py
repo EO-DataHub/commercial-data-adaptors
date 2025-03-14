@@ -108,9 +108,11 @@ def post_submit_order(
         "Content-Type": "application/json",
     }
 
-    response = requests.post(url, json=request_body, headers=headers)
-    response.raise_for_status()
-
-    body = response.json()
+    logging.info(request_body)
+    body = request_body
+    # response = requests.post(url, json=request_body, headers=headers)
+    # response.raise_for_status()
+    #
+    # body = response.json()
     logging.info(f"Order submitted: {body}")
     return body.get("salesOrderId"), customer_reference
