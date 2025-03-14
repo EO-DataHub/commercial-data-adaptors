@@ -55,33 +55,42 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
 
 def get_order_options(product_type: str, orbit: str, resolution: str, map_projection: str) -> dict:
     """Return the order options for the given product bundle"""
-    available_types = ["SCC", "MGD", "GEC", "EEC"]
+    available_types = ["SSC", "MGD", "GEC", "EEC"]
     available_orbits = ["rapid", "science"]
     available_resolutions = ["RE", "SE"]
-    available_map_projections = ["auto", "utm", "ups"]
+    available_map_projections = ["auto", "UTM", "UPS"]
+
+    order_details = {"orderTemplate": "Ordering"}
+
     if product_type not in available_types:
         raise NotImplementedError(
             f"Product bundle {product_type} is not valid. Currently implemented bundles are {available_types}"
         )
+    else:
+        order_details["productType"] = product_type
+
     if orbit not in available_orbits:
         raise NotImplementedError(
             f"Orbit {orbit} is not valid. Currently implemented orbits are {available_orbits}"
         )
-    if resolution not in available_resolutions:
+    else:
+        order_details["orbit"] = orbit
+
+    if resolution not in available_resolutions and resolution is not None:
         raise NotImplementedError(
             f"Resolution {resolution} is not valid. Currently implemented resolutions are {available_resolutions}"
         )
-    if map_projection not in available_map_projections:
+    else:
+        order_details["resolution"] = resolution
+
+    if map_projection not in available_map_projections and map_projection is not None:
         raise NotImplementedError(
             f"Map projection {resolution} is not valid. Currently implemented map projections are {available_map_projections}"
         )
-    return {
-        "productType": product_type,
-        "orbit": orbit,
-        "resolution": resolution,
-        "mapProjection": map_projection,
-        "orderTemplate": "Ordering",
-    }
+    else:
+        order_details["mapProjection"] = map_projection
+
+    return order_details
 
 
 def main(
@@ -97,10 +106,10 @@ def main(
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
     logging.info(f"Ordering items in catalogues from stage in: {catalogue_dirs}")
     order_options = get_order_options(
-        product_type=product_bundle["product_type"],
-        map_projection=product_bundle["projection"],
-        orbit=product_bundle["orbit"],
-        resolution=product_bundle["resolution"]
+        product_type=product_bundle.get("product_type"),
+        map_projection=product_bundle.get("projection"),
+        orbit=product_bundle.get("orbit"),
+        resolution=product_bundle.get("resolution")
     )
     logging.info(f"Order options: {order_options}")
     stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)

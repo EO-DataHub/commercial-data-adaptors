@@ -13,16 +13,21 @@ def post_submit_order(
     else:
         url = "https://dev.sar.api.oneatlas.airbus.com"
 
+    item_options = {
+            "productType": order_options.get("productType"),
+            "orbitType": order_options.get("orbit"),
+            "gainAttenuation": 0,
+        }
+    if map_projection := order_options.get("mapProjection"):
+        item_options["mapProjection"] = map_projection
+
+    if resolution := order_options.get("resolution"):
+            item_options["resolutionVariant"] = resolution
+
     body = {
         "acquisitions": [acquisition_id],
         "orderTemplate": order_options.get("orderTemplate"),
-        "orderOptions": {
-            "productType": order_options.get("productType"),
-            "resolutionVariant": order_options.get("resolution"),
-            "orbitType": order_options.get("orbit"),
-            "mapProjection": order_options.get("mapProjection"),
-            "gainAttenuation": 0,
-        },
+        "orderOptions": item_options,
         "purpose": "IT Service Company",
     }
 
