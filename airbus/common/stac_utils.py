@@ -2,6 +2,7 @@ import json
 import logging
 import mimetypes
 import os
+from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Union
 
@@ -131,6 +132,10 @@ def update_stac_item_failure(
     # Mark the reason for the failure in the local STAC item
     stac_item["properties"]["order_failure_reason"] = reason
 
+    # Update the 'updated' field to the current time
+    current_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    stac_item["properties"]["updated"] = current_time
+
     # Create local record of attempted order, to be used as the workflow output
     write_stac_item_and_catalog(stac_item, file_name, collection_id, order_id)
 
@@ -157,6 +162,11 @@ def update_stac_item_success(
             }
     # Mark the order as succeeded and upload the updated STAC item
     update_stac_order_status(stac_item, order_id, OrderStatus.SUCCEEDED.value)
+
+    # Update the 'updated' and 'published' fields to the current time
+    current_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    stac_item["properties"]["updated"] = current_time
+    stac_item["properties"]["published"] = current_time
 
     # Create local record of the order, to be used as the workflow output
     write_stac_item_and_catalog(stac_item, file_name, collection_id, order_id)
