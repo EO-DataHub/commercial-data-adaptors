@@ -12,6 +12,7 @@ from common.stac_utils import (
     get_key_from_stac,
     retrieve_stac_item,
     update_stac_item_failure,
+    update_stac_item_ordered,
     update_stac_item_success,
     verify_coordinates,
 )
@@ -116,7 +117,9 @@ def get_order_options(product_bundle: str) -> dict:
 
 def main(
     workspace: str,
+    workspace_bucket: str,
     commercial_data_bucket: str,
+    pulsar_url: str,
     product_bundle: str,
     coordinates: List,
     catalogue_dirs: List[str],
@@ -170,6 +173,16 @@ def main(
                 reason,
             )
             return
+        # Update the STAC record after submitting the order
+        update_stac_item_ordered(
+            stac_item.stac_json,
+            stac_item.collection_id,
+            stac_item.acquisition_id,
+            order_id,
+            workspace_bucket,
+            pulsar_url,
+            workspace,
+        )
         try:
             # Wait for data from airbus to arrive, then download it
             # Archive is of the format <customer_reference>_<internal_reference>_<acquisition_id>.zip
@@ -207,9 +220,11 @@ def main(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Order Airbus data")
     parser.add_argument("workspace", type=str, help="Workspace name")
+    parser.add_argument("workspace_bucket", type=str, help="Workspace bucket")
     parser.add_argument(
         "commercial_data_bucket", type=str, help="Commercial data bucket"
     )
+    parser.add_argument("pulsar_url", type=str, help="Pulsar URL")
     parser.add_argument("product_bundle", type=str, help="Product bundle")
     parser.add_argument(
         "--coordinates", type=str, required=True, help="Stringified list of coordinates"
@@ -234,7 +249,9 @@ if __name__ == "__main__":
 
     main(
         args.workspace,
+        args.workspace_bucket,
         args.commercial_data_bucket,
+        args.pulsar_url,
         args.product_bundle,
         coordinates,
         args.catalogue_dirs,

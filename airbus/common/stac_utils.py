@@ -6,6 +6,9 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Union
 
+import boto3
+import pulsar
+
 Coordinate = Union[List[float], tuple[float, float]]
 
 
@@ -118,6 +121,44 @@ def get_key_from_stac(stac_item: dict, key: str):
     return value
 
 
+def ingest_stac_item(
+    stac_item: dict, s3_bucket, pulsar_url, workspace, collection_id, item_id
+):
+    # Upload the STAC item to S3
+    s3_client = boto3.client("s3")
+    parent_catalog_name = "commercial-data"
+
+    item_key = (
+        f"{workspace}/{parent_catalog_name}/airbus/{collection_id}/{item_id}.json"
+    )
+    s3_client.put_object(Body=json.dumps(stac_item), Bucket=s3_bucket, Key=item_key)
+
+    logging.info(
+        f"Uploaded STAC item to S3 bucket '{s3_bucket}' with key '{item_key}'."
+    )
+
+    # Send a Pulsar message
+    pulsar_client = pulsar.Client(pulsar_url)
+    producer = pulsar_client.create_producer(
+        topic="harvested", producer_name=f"data_adaptor-{workspace}-{item_id}"
+    )
+    output_data = {
+        "id": f"{workspace}/update_order",
+        "workspace": workspace,
+        "bucket_name": s3_bucket,
+        "added_keys": [],
+        "updated_keys": [item_key],
+        "deleted_keys": [],
+        "source": workspace,
+        "target": f"user-datasets/{workspace}",
+    }
+    producer.send((json.dumps(output_data)).encode("utf-8"))
+    logging.info(f"Sent Pulsar message {output_data}.")
+
+    # Close the Pulsar client
+    pulsar_client.close()
+
+
 def update_stac_item_failure(
     stac_item: dict,
     file_name: str,
@@ -138,6 +179,34 @@ def update_stac_item_failure(
 
     # Create local record of attempted order, to be used as the workflow output
     write_stac_item_and_catalog(stac_item, file_name, collection_id, order_id)
+
+
+def update_stac_item_ordered(
+    stac_item: dict,
+    collection_id,
+    item_id,
+    order_id: str,
+    s3_bucket: str,
+    pulsar_url: str,
+    workspace: str,
+):
+    """Update the STAC item with the ordered order status"""
+    logging.info(f"Updating STAC item with order ID: {order_id} to 'ordered' status.")
+    # Mark the order as ordered in the local STAC item
+    update_stac_order_status(stac_item, order_id, OrderStatus.ORDERED.value)
+
+    # Update the 'updated' field to the current time
+    current_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    stac_item["properties"]["updated"] = current_time
+    stac_item["properties"]["order.date"] = current_time
+
+    # Ingest the updated STAC item to the catalog
+    try:
+        ingest_stac_item(
+            stac_item, s3_bucket, pulsar_url, workspace, collection_id, item_id
+        )
+    except Exception as e:
+        logging.error(f"Failed to ingest STAC item: {e}", exc_info=True)
 
 
 def update_stac_item_success(

@@ -15,9 +15,17 @@ $graph:
         label: workspace name
         doc: name of workspace
         type: string
+      workspace_bucket:
+        label: bucket within which workspace data is stored
+        doc: bucket within which workspace data is stored
+        type: string
       commercial_data_bucket:
         label: bucket from which commercial data will be received
         doc: bucket from which commercial data will be received
+        type: string
+      pulsar_url:
+        label: URL to inform the pulsar environment of STAC updates
+        doc: URL to inform the pulsar environment of STAC updates
         type: string
       product_bundle:
         label: Reference to a group of settings describing parameters for an order
@@ -45,7 +53,9 @@ $graph:
         run: "#airbus-optical-adaptor"
         in:
           workspace: workspace
+          workspace_bucket: workspace_bucket
           commercial_data_bucket: commercial_data_bucket
+          pulsar_url: pulsar_url
           product_bundle: product_bundle
           coordinates: coordinates
           stac_key: stac_key
@@ -64,29 +74,37 @@ $graph:
         type: string
         inputBinding:
           position: 1
-      commercial_data_bucket:
+      workspace_bucket:
         type: string
         inputBinding:
           position: 2
-      product_bundle:
+      commercial_data_bucket:
         type: string
         inputBinding:
           position: 3
+      pulsar_url:
+        type: string
+        inputBinding:
+          position: 4
+      product_bundle:
+        type: string
+        inputBinding:
+          position: 5
       coordinates:
         type: string
         inputBinding:
           prefix: --coordinates
-          position: 4
+          position: 6
       stac_key:
         type: Directory
         inputBinding:
           prefix: --catalogue_dirs
-          position: 5
+          position: 7
       end_users:
         type: string
         inputBinding:
           prefix: --end_users
-          position: 6
+          position: 8
 
     outputs:
       results:
