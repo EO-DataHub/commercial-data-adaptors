@@ -49,6 +49,22 @@ class OrderStatus(Enum):
     FAILED = "failed"
 
 
+product_bundle_map = {
+    "PSScene": {
+        "Visual": "visual",
+        "General use": "analytic_8b_sr_udm2,analytic_sr_udm2",
+        "Analytic": "analytic_8b_sr_udm2,analytic_sr_udm2",
+        "Basic": "basic_analytic_8b_udm2,basic_analytic_udm2",
+    },
+    "SkySatCollect": {
+        "Visual": "visual",
+        "General use": "pansharpened_udm2",
+        "Analytic": "analytic_sr_udm2",
+        "Basic": "basic_analytic_udm2",
+    },
+}
+
+
 def update_stac_item_success(
     stac_item: dict, file_name: str, order_name: str, directory: str
 ):
@@ -170,7 +186,7 @@ def hash_aoi(coordinates):
 def main(
     workspace: str,
     commercial_data_bucket: str,
-    product_bundle: str,
+    product_bundle_category: str,
     coordinates: List,
     catalogue_dirs: List[str],
 ) -> None:
@@ -180,6 +196,22 @@ def main(
     stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
 
     for stac_item in stac_items:
+        collection_id = stac_item.collection_id
+        if collection_id not in product_bundle_map.keys():
+            raise NotImplementedError(
+                f"Collection {collection_id} is not valid. Currently implemented collections are "
+                f"{product_bundle_map.keys()}"
+            )
+
+        try:
+            product_bundle = product_bundle_map[collection_id][product_bundle_category]
+
+        except KeyError:
+            raise NotImplementedError(
+                f"Product bundle {product_bundle_category} is not valid. Currently implemented bundles are "
+                f"{product_bundle_map[collection_id].keys()} for {collection_id}"
+            )
+
         if coordinates:
             order_name = f"{stac_item.item_id}-{workspace}-{hash_aoi(coordinates)}"
         else:
@@ -194,9 +226,7 @@ def main(
 
         try:
             # Submit an order for the given STAC item
-            logging.info(
-                f"Ordering stac item {stac_item.item_id} in {stac_item.collection_id}"
-            )
+            logging.info(f"Ordering stac item {stac_item.item_id} in {collection_id}")
 
             order = asyncio.run(get_existing_order_details(workspace, order_name))
             logging.info(f"Existing order: {order}")
@@ -221,7 +251,7 @@ def main(
                 order_request = create_order_request(
                     order_name,
                     stac_item.item_id,
-                    stac_item.collection_id,
+                    collection_id,
                     delivery_request,
                     product_bundle,
                     coordinates,
