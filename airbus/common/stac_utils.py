@@ -137,20 +137,32 @@ def ingest_stac_item(
         f"Uploaded STAC item to S3 bucket '{s3_bucket}' with key '{item_key}'."
     )
 
+    transformed_item_key = (
+        f"transformed/catalogs/user/catalogs/{workspace}/catalogs/{parent_catalog_name}/catalogs/"
+        f"airbus/collections/{collection_id}/items/{item_id}.json"
+    )
+    s3_client.put_object(
+        Body=json.dumps(stac_item), Bucket=s3_bucket, Key=transformed_item_key
+    )
+
+    logging.info(
+        f"Uploaded STAC item to S3 bucket '{s3_bucket}' with key '{transformed_item_key}'."
+    )
+
     # Send a Pulsar message
     pulsar_client = pulsar.Client(pulsar_url)
     producer = pulsar_client.create_producer(
-        topic="harvested", producer_name=f"data_adaptor-{workspace}-{item_id}"
+        topic="transformed", producer_name=f"data_adaptor-{workspace}-{item_id}"
     )
     output_data = {
         "id": f"{workspace}/update_order",
         "workspace": workspace,
         "bucket_name": s3_bucket,
         "added_keys": [],
-        "updated_keys": [item_key],
+        "updated_keys": [transformed_item_key],
         "deleted_keys": [],
-        "source": workspace,
-        "target": f"user-datasets/{workspace}",
+        "source": "/",
+        "target": "/",
     }
     producer.send((json.dumps(output_data)).encode("utf-8"))
     logging.info(f"Sent Pulsar message {output_data}.")
