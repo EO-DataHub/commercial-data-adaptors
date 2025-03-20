@@ -131,7 +131,6 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
 
 def get_order_options(product_bundle: str) -> dict:
     """Return the order options for the given product bundle"""
-    # TODO: Expand and implement different options based on product bundle
     available_bundles = ["General use", "Visual", "Analytic", "Basic"]
     if product_bundle not in available_bundles:
         raise NotImplementedError(

@@ -122,8 +122,9 @@ def get_key_from_stac(stac_item: dict, key: str):
 
 
 def ingest_stac_item(
-    stac_item: dict, s3_bucket, pulsar_url, workspace, collection_id, item_id
+    stac_item: dict, s3_bucket: str, pulsar_url: str, workspace: str, collection_id: str, item_id: str
 ):
+    """Ingest the STAC item to the S3 bucket and send a Pulsar message"""
     # Upload the STAC item to S3
     s3_client = boto3.client("s3")
     parent_catalog_name = "commercial-data"
@@ -195,8 +196,8 @@ def update_stac_item_failure(
 
 def update_stac_item_ordered(
     stac_item: dict,
-    collection_id,
-    item_id,
+    collection_id: str,
+    item_id: str,
     order_id: str,
     s3_bucket: str,
     pulsar_url: str,
@@ -222,7 +223,7 @@ def update_stac_item_ordered(
 
 
 def update_stac_item_success(
-    stac_item: dict, file_name: str, collection_id, order_id: str, directory: str
+    stac_item: dict, file_name: str, collection_id: str, order_id: str, directory: str
 ):
     """Update the STAC item with the assets and success order status"""
     # Add all files in the directory as assets to the STAC item
