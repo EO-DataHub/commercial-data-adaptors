@@ -10,6 +10,9 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import List
 
+import boto3
+import pulsar
+
 from planet_adaptor.api_utils import (
     create_order_request,
     define_delivery,
@@ -146,11 +149,56 @@ def update_stac_item_ordered(
     except Exception as e:
         logging.error(f"Failed to ingest STAC item: {e}", exc_info=True)
 
+
 def ingest_stac_item(
     stac_item: dict, s3_bucket, pulsar_url, workspace, collection_id, item_id
 ):
-    # TODO: placeholder awaiting testing of other adaptors first.
-    pass
+    # Upload the STAC item to S3
+    s3_client = boto3.client("s3")
+    parent_catalog_name = "commercial-data"
+
+    item_key = (
+        f"{workspace}/{parent_catalog_name}/planet/{collection_id}/{item_id}.json"
+    )
+    s3_client.put_object(Body=json.dumps(stac_item), Bucket=s3_bucket, Key=item_key)
+
+    logging.info(
+        f"Uploaded STAC item to S3 bucket '{s3_bucket}' with key '{item_key}'."
+    )
+
+    transformed_item_key = (
+        f"transformed/catalogs/user/catalogs/{workspace}/catalogs/{parent_catalog_name}/catalogs/"
+        f"planet/collections/{collection_id}/items/{item_id}.json"
+    )
+    s3_client.put_object(
+        Body=json.dumps(stac_item), Bucket=s3_bucket, Key=transformed_item_key
+    )
+
+    logging.info(
+        f"Uploaded STAC item to S3 bucket '{s3_bucket}' with key '{transformed_item_key}'."
+    )
+
+    # Send a Pulsar message
+    pulsar_client = pulsar.Client(pulsar_url)
+    producer = pulsar_client.create_producer(
+        topic="transformed", producer_name=f"data_adaptor-{workspace}-{item_id}"
+    )
+    output_data = {
+        "id": f"{workspace}/update_order",
+        "workspace": workspace,
+        "bucket_name": s3_bucket,
+        "added_keys": [],
+        "updated_keys": [transformed_item_key],
+        "deleted_keys": [],
+        "source": "/",
+        "target": "/",
+    }
+    producer.send((json.dumps(output_data)).encode("utf-8"))
+    logging.info(f"Sent Pulsar message {output_data}.")
+
+    # Close the Pulsar client
+    pulsar_client.close()
+
 
 async def get_existing_order_details(workspace, order_name) -> dict:
     planet_api_key = get_planet_api_key(workspace)
