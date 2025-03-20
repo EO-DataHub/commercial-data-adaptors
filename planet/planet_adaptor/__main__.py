@@ -119,6 +119,39 @@ def update_stac_item_failure(
     write_stac_item_and_catalog(stac_item, file_name, order_name)
 
 
+def update_stac_item_ordered(
+    stac_item: dict,
+    collection_id,
+    item_id,
+    order_id: str,
+    s3_bucket: str,
+    pulsar_url: str,
+    workspace: str,
+):
+    """Update the STAC item with the ordered order status"""
+    logging.info(f"Updating STAC item with order ID: {order_id} to 'ordered' status.")
+    # Mark the order as ordered in the local STAC item
+    update_stac_order_status(stac_item, order_id, OrderStatus.ORDERED.value)
+
+    # Update the 'updated' field to the current time
+    current_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    stac_item["properties"]["updated"] = current_time
+    stac_item["properties"]["order.date"] = current_time
+
+    # Ingest the updated STAC item to the catalog
+    try:
+        ingest_stac_item(
+            stac_item, s3_bucket, pulsar_url, workspace, collection_id, item_id
+        )
+    except Exception as e:
+        logging.error(f"Failed to ingest STAC item: {e}", exc_info=True)
+
+def ingest_stac_item(
+    stac_item: dict, s3_bucket, pulsar_url, workspace, collection_id, item_id
+):
+    # TODO: placeholder awaiting testing of other adaptors first.
+    pass
+
 async def get_existing_order_details(workspace, order_name) -> dict:
     planet_api_key = get_planet_api_key(workspace)
     auth = planet.Auth.from_key(planet_api_key)
@@ -185,7 +218,9 @@ def hash_aoi(coordinates):
 
 def main(
     workspace: str,
+    workspace_bucket: str,
     commercial_data_bucket: str,
+    pulsar_url: str,
     product_bundle_category: str,
     coordinates: List,
     catalogue_dirs: List[str],
@@ -272,6 +307,17 @@ def main(
             )
             return
 
+        # Update the STAC record after submitting the order
+        update_stac_item_ordered(
+            stac_item.stac_json,
+            stac_item.collection_id,
+            stac_item.item_id,
+            order_id,
+            workspace_bucket,
+            pulsar_url,
+            workspace,
+        )
+
         try:
             # Wait for data from planet to arrive, then move it to the workspace
             poll_s3_for_data(
@@ -298,9 +344,11 @@ def main(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Order Planet data")
     parser.add_argument("workspace", type=str, help="Workspace name")
+    parser.add_argument("workspace_bucket", type=str, help="Workspace bucket")
     parser.add_argument(
         "commercial_data_bucket", type=str, help="Commercial data bucket"
     )
+    parser.add_argument("pulsar_url", type=str, help="Pulsar URL")
     parser.add_argument("product_bundle", type=str, help="Product bundle")
     parser.add_argument("coordinates", type=str, help="Stringified list of coordinates")
     parser.add_argument(
@@ -315,7 +363,9 @@ if __name__ == "__main__":
 
     main(
         args.workspace,
+        args.workspace_bucket,
         args.commercial_data_bucket,
+        args.pulsar_url,
         args.product_bundle,
         coordinates,
         args.catalogue_dirs,
