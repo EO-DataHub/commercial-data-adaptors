@@ -35,6 +35,10 @@ $graph:
         label: path to stac item in s3 describing data to order and download
         doc: path to stac item in s3 describing data to order and download
         type: Directory
+      license:
+        label: License used for the order.
+        doc: License used for the order.
+        type: string
       workspace:
         label: workspace final destination of the order
         doc: workspace final destination of the order
@@ -54,6 +58,7 @@ $graph:
           product_bundle: product_bundle
           coordinates: coordinates
           stac_key: stac_key
+          license: license
           workspace: workspace
         out:
           - results
@@ -92,11 +97,16 @@ $graph:
         inputBinding:
           prefix: --catalogue_dirs
           position: 6
+      license:
+        type: string
+        inputBinding:
+          prefix: --license
+          position: 7
       workspace:
         type: string
         inputBinding:
           prefix: --workspace
-          position: 7
+          position: 8
 
 
     outputs:

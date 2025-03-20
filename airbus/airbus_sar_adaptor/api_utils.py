@@ -5,7 +5,7 @@ from common.auth_utils import generate_access_token
 
 
 def post_submit_order(
-    acquisition_id: str, order_options: dict, workspace: str, env: str = "prod"
+    acquisition_id: str, order_options: dict, workspace: str, license: str, env: str = "prod"
 ) -> str:
     """Submit an order for a SAR acquisition via POST request"""
     if env == "prod":
@@ -26,7 +26,7 @@ def post_submit_order(
 
     body = {
         "acquisitions": [acquisition_id],
-        "orderTemplate": order_options.get("orderTemplate"),
+        "orderTemplate": license,
         "orderOptions": item_options,
         "purpose": "IT Service Company",
     }

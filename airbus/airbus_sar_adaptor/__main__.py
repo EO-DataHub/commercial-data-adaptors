@@ -63,7 +63,7 @@ def get_order_options(
     available_resolutions = ["RE", "SE"]
     available_map_projections = ["auto", "UTM", "UPS"]
 
-    order_details = {"orderTemplate": "Ordering"}
+    order_details = {}
 
     if product_type not in available_types:
         raise NotImplementedError(
@@ -103,6 +103,7 @@ def main(
     product_bundle: str,
     coordinates: List,
     catalogue_dirs: List[str],
+    license: str,
     workspace: str,
 ):
     product_bundle = json.loads(product_bundle)
@@ -131,7 +132,7 @@ def main(
                 )
                 return
             order_id = post_submit_order(
-                stac_item.acquisition_id, order_options, workspace
+                stac_item.acquisition_id, order_options, workspace, license
             )
             order_id = order_id.split("_")[0]
         except Exception as e:
@@ -189,6 +190,12 @@ if __name__ == "__main__":
         help="List of catalogue directories",
     )
     parser.add_argument(
+        "--license",
+        type=str,
+        required=True,
+        help="License used for the order",
+    )
+    parser.add_argument(
         "--workspace",
         type=str,
         required=True,
@@ -206,5 +213,6 @@ if __name__ == "__main__":
         args.product_bundle,
         coordinates,
         args.catalogue_dirs,
+        args.license,
         args.workspace,
     )

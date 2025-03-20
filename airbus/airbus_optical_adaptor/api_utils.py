@@ -11,6 +11,7 @@ def post_submit_order(
     coordinates: list,
     order_options: dict,
     workspace: str,
+    license: str,
     item_uuids: list = None,
     end_users: list = None,
 ) -> str:
@@ -71,7 +72,7 @@ def post_submit_order(
                     {"key": "delivery_method", "value": "on_the_flow"},
                     {"key": "fullStrip", "value": "false"},
                     {"key": "image_format", "value": "dimap_geotiff"},
-                    {"key": "licence", "value": "standard"},
+                    {"key": "licence", "value": license},
                     {"key": "pixel_coding", "value": order_options.get("pixelCoding")},
                     {"key": "priority", "value": "standard"},
                     {
