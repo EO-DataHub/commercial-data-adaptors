@@ -43,9 +43,9 @@ $graph:
         label: List of end users and nationalities. Only required for PNEO orders
         doc: List of end users and nationalities. Only required for PNEO orders
         type: string
-      license:
-        label: License used for the order.
-        doc: License used for the order.
+      licence:
+        label: Licence used for the order.
+        doc: Licence used for the order.
         type: string
     outputs:
       - id: results
@@ -64,7 +64,7 @@ $graph:
           coordinates: coordinates
           stac_key: stac_key
           end_users: end_users
-          license: license
+          licence: licence
         out:
           - results
   # convert.sh - takes input args `--url`
@@ -110,10 +110,10 @@ $graph:
         inputBinding:
           prefix: --end_users
           position: 8
-      license:
+      licence:
         type: string
         inputBinding:
-          prefix: --license
+          prefix: --licence
           position: 9
 
     outputs:

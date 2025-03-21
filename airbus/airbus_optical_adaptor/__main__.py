@@ -147,7 +147,7 @@ def main(
     product_bundle: str,
     coordinates: List,
     catalogue_dirs: List[str],
-    license: str,
+    licence: str,
     end_users: Optional[List[Dict[str, str]]] = None,
 ):
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
@@ -187,7 +187,7 @@ def main(
                 coordinates,
                 order_options,
                 workspace,
-                license,
+                licence,
                 stac_item.item_uuids,
                 end_users,
             )
@@ -199,6 +199,8 @@ def main(
                 stac_item.file_name,
                 stac_item.collection_id,
                 reason,
+                workspace,
+                workspace_bucket,
             )
             return
         # Update the STAC record after submitting the order
@@ -233,6 +235,8 @@ def main(
                 stac_item.file_name,
                 stac_item.collection_id,
                 reason,
+                workspace,
+                workspace_bucket,
                 order_id,
             )
             return
@@ -242,6 +246,8 @@ def main(
             stac_item.collection_id,
             order_id,
             "assets",
+            workspace,
+            workspace_bucket,
         )
 
 
@@ -270,10 +276,10 @@ if __name__ == "__main__":
         help="Stringified list of end user names and countries",
     )
     parser.add_argument(
-        "--license",
+        "--licence",
         type=str,
         required=True,
-        help="License used for the order",
+        help="Licence used for the order",
     )
 
     args = parser.parse_args()
@@ -289,6 +295,6 @@ if __name__ == "__main__":
         args.product_bundle,
         coordinates,
         args.catalogue_dirs,
-        args.license,
+        args.licence,
         end_users,
     )
