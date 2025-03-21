@@ -12,7 +12,6 @@ from typing import List
 
 import boto3
 import pulsar
-
 from planet_adaptor.api_utils import (
     create_order_request,
     define_delivery,
