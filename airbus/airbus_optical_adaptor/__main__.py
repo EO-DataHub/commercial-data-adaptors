@@ -12,6 +12,7 @@ from common.stac_utils import (
     get_key_from_stac,
     retrieve_stac_item,
     update_stac_item_failure,
+    update_stac_item_ordered,
     update_stac_item_success,
     verify_coordinates,
 )
@@ -130,7 +131,6 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
 
 def get_order_options(product_bundle: str) -> dict:
     """Return the order options for the given product bundle"""
-    # TODO: Expand and implement different options based on product bundle
     available_bundles = ["General use", "Visual", "Analytic", "Basic"]
     if product_bundle not in available_bundles:
         raise NotImplementedError(
@@ -141,10 +141,13 @@ def get_order_options(product_bundle: str) -> dict:
 
 def main(
     workspace: str,
+    workspace_bucket: str,
     commercial_data_bucket: str,
+    pulsar_url: str,
     product_bundle: str,
     coordinates: List,
     catalogue_dirs: List[str],
+    licence: str,
     end_users: Optional[List[Dict[str, str]]] = None,
 ):
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
@@ -163,11 +166,17 @@ def main(
             # Submit an order for the given STAC item
             logging.info(f"Ordering STAC item {stac_item.acquisition_id}")
             if stac_item.order_status == OrderStatus.ORDERED.value:
-                logging.info(
-                    f"Order for {stac_item.acquisition_id} is already in progress"
-                )
+                reason = f"Order for {stac_item.acquisition_id} is already in progress"
+                logging.error(reason)
                 # Unable to obtain the item_id again, so cannot wait for data. Fail the order.
-                update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
+                update_stac_item_failure(
+                    stac_item.stac_json,
+                    stac_item.file_name,
+                    stac_item.collection_id,
+                    reason,
+                    workspace,
+                    workspace_bucket,
+                )
                 return
             if not coordinates:
                 # Limit order by an AOI if provided
@@ -178,13 +187,32 @@ def main(
                 coordinates,
                 order_options,
                 workspace,
+                licence,
                 stac_item.item_uuids,
                 end_users,
             )
         except Exception as e:
-            logging.error(f"Failed to submit order: {e}", exc_info=True)
-            update_stac_item_failure(stac_item.stac_json, stac_item.file_name)
+            reason = f"Failed to submit order: {e}"
+            logging.error(reason, exc_info=True)
+            update_stac_item_failure(
+                stac_item.stac_json,
+                stac_item.file_name,
+                stac_item.collection_id,
+                reason,
+                workspace,
+                workspace_bucket,
+            )
             return
+        # Update the STAC record after submitting the order
+        update_stac_item_ordered(
+            stac_item.stac_json,
+            stac_item.collection_id,
+            stac_item.acquisition_id,
+            order_id,
+            workspace_bucket,
+            pulsar_url,
+            workspace,
+        )
         try:
             # Wait for data from airbus to arrive, then download it
             # Archive is of the format <customer_reference>_<internal_reference>_<acquisition_id>.zip
@@ -200,20 +228,37 @@ def main(
                     "assets",
                 )
         except Exception as e:
-            logging.error(f"Failed to retrieve data: {e}", exc_info=True)
-            update_stac_item_failure(stac_item.stac_json, stac_item.file_name, order_id)
+            reason = f"Failed to retrieve data: {e}"
+            logging.error(reason, exc_info=True)
+            update_stac_item_failure(
+                stac_item.stac_json,
+                stac_item.file_name,
+                stac_item.collection_id,
+                reason,
+                workspace,
+                workspace_bucket,
+                order_id,
+            )
             return
         update_stac_item_success(
-            stac_item.stac_json, stac_item.file_name, order_id, "assets"
+            stac_item.stac_json,
+            stac_item.file_name,
+            stac_item.collection_id,
+            order_id,
+            "assets",
+            workspace,
+            workspace_bucket,
         )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Order Airbus data")
     parser.add_argument("workspace", type=str, help="Workspace name")
+    parser.add_argument("workspace_bucket", type=str, help="Workspace bucket")
     parser.add_argument(
         "commercial_data_bucket", type=str, help="Commercial data bucket"
     )
+    parser.add_argument("pulsar_url", type=str, help="Pulsar URL")
     parser.add_argument("product_bundle", type=str, help="Product bundle")
     parser.add_argument(
         "--coordinates", type=str, required=True, help="Stringified list of coordinates"
@@ -230,6 +275,12 @@ if __name__ == "__main__":
         required=True,
         help="Stringified list of end user names and countries",
     )
+    parser.add_argument(
+        "--licence",
+        type=str,
+        required=True,
+        help="Licence used for the order",
+    )
 
     args = parser.parse_args()
 
@@ -238,9 +289,12 @@ if __name__ == "__main__":
 
     main(
         args.workspace,
+        args.workspace_bucket,
         args.commercial_data_bucket,
+        args.pulsar_url,
         args.product_bundle,
         coordinates,
         args.catalogue_dirs,
+        args.licence,
         end_users,
     )

@@ -115,6 +115,7 @@ def get_aws_api_key_from_secret(
 
 
 def define_delivery(credentials: dict, bucket: str, folder: str) -> dict:
+    """Define the delivery settings for a Planet order"""
     return planet.order_request.amazon_s3(
         credentials["AccessKeyId"],
         credentials["SecretAccessKey"],
