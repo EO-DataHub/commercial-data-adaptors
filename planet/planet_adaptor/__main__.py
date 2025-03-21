@@ -69,7 +69,13 @@ product_bundle_map = {
 
 
 def update_stac_item_success(
-    stac_item: dict, file_name: str, order_name: str, directory: str
+    stac_item: dict,
+    file_name: str,
+    collection_id: str,
+    order_name: str,
+    directory: str,
+    workspace: str,
+    workspaces_bucket: str,
 ):
     """Update the STAC item with the assets and success order status"""
     # Add all files in the directory as assets to the STAC item
@@ -97,7 +103,9 @@ def update_stac_item_success(
     stac_item["properties"]["published"] = current_time
 
     # Create local record of the order, to be used as the workflow output
-    write_stac_item_and_catalog(stac_item, file_name, order_name)
+    write_stac_item_and_catalog(
+        stac_item, file_name, collection_id, order_name, workspace, workspaces_bucket
+    )
 
     # Adding this for debugging purposes later on, just in case
     logging.info(f"Files in current working directory: {os.getcwd()}")
@@ -105,7 +113,13 @@ def update_stac_item_success(
 
 
 def update_stac_item_failure(
-    stac_item: dict, file_name: str, reason: str, order_name: str
+    stac_item: dict,
+    file_name: str,
+    collection_id: str,
+    reason: str,
+    workspace: str,
+    workspace_bucket: str,
+    order_name: str,
 ) -> None:
     """Update the STAC item with the failure order status"""
     # Mark the order as failed in the local STAC item
@@ -119,7 +133,9 @@ def update_stac_item_failure(
     stac_item["properties"]["updated"] = current_time
 
     # Create local record of attempted order, to be used as the workflow output
-    write_stac_item_and_catalog(stac_item, file_name, order_name)
+    write_stac_item_and_catalog(
+        stac_item, file_name, collection_id, order_name, workspace, workspace_bucket
+    )
 
 
 def update_stac_item_ordered(
@@ -151,7 +167,12 @@ def update_stac_item_ordered(
 
 
 def ingest_stac_item(
-    stac_item: dict, s3_bucket: str, pulsar_url: str, workspace: str, collection_id: str, item_id: str
+    stac_item: dict,
+    s3_bucket: str,
+    pulsar_url: str,
+    workspace: str,
+    collection_id: str,
+    item_id: str,
 ):
     """Ingest the STAC item to the S3 bucket and send a Pulsar message"""
     # Upload the STAC item to S3
@@ -323,7 +344,13 @@ def main(
                 reason = f"Order for {stac_item.item_id} has already been submitted: {submitted_order_id}"
                 logging.info(reason)
                 update_stac_item_failure(
-                    stac_item.stac_json, stac_item.file_name, reason, None
+                    stac_item.stac_json,
+                    stac_item.file_name,
+                    stac_item.collection_id,
+                    reason,
+                    workspace,
+                    workspace_bucket,
+                    None,
                 )
                 return
 
@@ -353,7 +380,13 @@ def main(
             reason = f"Failed to submit order: {e}"
             logging.error(reason, exc_info=True)
             update_stac_item_failure(
-                stac_item.stac_json, stac_item.file_name, reason, order_name
+                stac_item.stac_json,
+                stac_item.file_name,
+                stac_item.collection_id,
+                reason,
+                workspace,
+                workspace_bucket,
+                order_name,
             )
             return
 
@@ -383,11 +416,23 @@ def main(
             reason = f"Failed to retrieve data: {e}"
             logging.error(reason, exc_info=True)
             update_stac_item_failure(
-                stac_item.stac_json, stac_item.file_name, reason, order_id
+                stac_item.stac_json,
+                stac_item.file_name,
+                stac_item.collection_id,
+                reason,
+                workspace,
+                workspace_bucket,
+                order_id,
             )
             return
         update_stac_item_success(
-            stac_item.stac_json, stac_item.file_name, order_name, "assets"
+            stac_item.stac_json,
+            stac_item.file_name,
+            stac_item.collection_id,
+            order_name,
+            "assets",
+            workspace,
+            workspace_bucket,
         )
 
 
