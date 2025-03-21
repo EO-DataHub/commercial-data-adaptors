@@ -174,6 +174,8 @@ def main(
                     stac_item.file_name,
                     stac_item.collection_id,
                     reason,
+                    workspace,
+                    workspace_bucket,
                 )
                 return
             if not coordinates:

@@ -5,7 +5,11 @@ from common.auth_utils import generate_access_token
 
 
 def post_submit_order(
-    acquisition_id: str, order_options: dict, workspace: str, license: str, env: str = "prod"
+    acquisition_id: str,
+    order_options: dict,
+    workspace: str,
+    licence: str,
+    env: str = "prod",
 ) -> str:
     """Submit an order for a SAR acquisition via POST request"""
     if env == "prod":
@@ -26,7 +30,7 @@ def post_submit_order(
 
     body = {
         "acquisitions": [acquisition_id],
-        "orderTemplate": license,
+        "orderTemplate": licence,
         "orderOptions": item_options,
         "purpose": "IT Service Company",
     }
@@ -39,11 +43,10 @@ def post_submit_order(
         "Content-Type": "application/json",
     }
 
-    logging.info(body)
-    # response = requests.post(f"{url}/v1/sar/orders/submit", json=body, headers=headers)
-    # response.raise_for_status()
-    #
-    # body = response.json()
+    response = requests.post(f"{url}/v1/sar/orders/submit", json=body, headers=headers)
+    response.raise_for_status()
+
+    body = response.json()
     logging.info(f"Order submitted: {body}")
     for feature in body["features"]:
         if feature["properties"]["acquisitionId"] == acquisition_id:

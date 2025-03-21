@@ -35,9 +35,9 @@ $graph:
         label: path to stac item in s3 describing data to order and download
         doc: path to stac item in s3 describing data to order and download
         type: Directory
-      license:
-        label: License used for the order.
-        doc: License used for the order.
+      licence:
+        label: Licence used for the order.
+        doc: Licence used for the order.
         type: string
       workspace:
         label: workspace final destination of the order
@@ -58,7 +58,7 @@ $graph:
           product_bundle: product_bundle
           coordinates: coordinates
           stac_key: stac_key
-          license: license
+          licence: licence
           workspace: workspace
         out:
           - results
@@ -67,7 +67,7 @@ $graph:
     id: airbus-sar-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/airbus-sar-adaptor:0.0.6-rc3
+        dockerPull: public.ecr.aws/eodh/airbus-sar-adaptor:0.0.7-rc8
     baseCommand: ["python", "-m", "airbus_sar_adaptor"]
     inputs:
       workspace_bucket:
@@ -78,7 +78,6 @@ $graph:
         type: string
         inputBinding:
           position: 2
-          position: 1
       pulsar_url:
         type: string
         inputBinding:
@@ -97,10 +96,10 @@ $graph:
         inputBinding:
           prefix: --catalogue_dirs
           position: 6
-      license:
+      licence:
         type: string
         inputBinding:
-          prefix: --license
+          prefix: --licence
           position: 7
       workspace:
         type: string

@@ -103,7 +103,7 @@ def main(
     product_bundle: str,
     coordinates: List,
     catalogue_dirs: List[str],
-    license: str,
+    licence: str,
     workspace: str,
 ):
     product_bundle = json.loads(product_bundle)
@@ -128,17 +128,29 @@ def main(
                 reason = f"Order for {stac_item.acquisition_id} is already in progress"
                 logging.error(reason)
                 update_stac_item_failure(
-                    stac_item.stac_json, stac_item.file_name, reason
+                    stac_item.stac_json,
+                    stac_item.file_name,
+                    stac_item.collection_id,
+                    reason,
+                    workspace,
+                    workspace_bucket,
                 )
                 return
             order_id = post_submit_order(
-                stac_item.acquisition_id, order_options, workspace, license
+                stac_item.acquisition_id, order_options, workspace, licence
             )
             order_id = order_id.split("_")[0]
         except Exception as e:
             reason = f"Failed to submit order: {e}"
             logging.error(reason, exc_info=True)
-            update_stac_item_failure(stac_item.stac_json, stac_item.file_name, reason)
+            update_stac_item_failure(
+                stac_item.stac_json,
+                stac_item.file_name,
+                stac_item.collection_id,
+                reason,
+                workspace,
+                workspace_bucket,
+            )
             return
         # Update the STAC record after submitting the order
         update_stac_item_ordered(
@@ -164,11 +176,23 @@ def main(
             reason = f"Failed to retrieve data: {e}"
             logging.error(reason, exc_info=True)
             update_stac_item_failure(
-                stac_item.stac_json, stac_item.file_name, reason, order_id
+                stac_item.stac_json,
+                stac_item.file_name,
+                stac_item.collection_id,
+                reason,
+                workspace,
+                workspace_bucket,
+                order_id,
             )
             return
         update_stac_item_success(
-            stac_item.stac_json, stac_item.file_name, order_id, "assets"
+            stac_item.stac_json,
+            stac_item.file_name,
+            stac_item.collection_id,
+            order_id,
+            "assets",
+            workspace,
+            workspace_bucket,
         )
 
 
@@ -190,10 +214,10 @@ if __name__ == "__main__":
         help="List of catalogue directories",
     )
     parser.add_argument(
-        "--license",
+        "--licence",
         type=str,
         required=True,
-        help="License used for the order",
+        help="Licence used for the order",
     )
     parser.add_argument(
         "--workspace",
@@ -213,6 +237,6 @@ if __name__ == "__main__":
         args.product_bundle,
         coordinates,
         args.catalogue_dirs,
-        args.license,
+        args.licence,
         args.workspace,
     )
