@@ -9,6 +9,11 @@ import boto3
 Coordinate = Union[List[float], tuple[float, float]]
 
 
+def current_time_iso8601() -> str:
+    """Return the current time in ISO 8601 format"""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
 def write_stac_item_and_catalog(
     stac_item: dict,
     stac_item_filename: str,
@@ -91,7 +96,7 @@ def write_stac_item_and_catalog(
                     "interval": [
                         [
                             "2010-01-01T00:00:00Z",
-                            datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                            current_time_iso8601(),
                         ]
                     ]
                 },

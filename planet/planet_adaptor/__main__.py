@@ -25,6 +25,7 @@ from planet_adaptor.s3_utils import (
     retrieve_stac_item,
 )
 from planet_adaptor.stac_utils import (
+    current_time_iso8601,
     get_item_hrefs_from_catalogue,
     get_key_from_stac,
     update_stac_order_status,
@@ -97,7 +98,7 @@ def update_stac_item_success(
     update_stac_order_status(stac_item, order_name, OrderStatus.SUCCEEDED.value)
 
     # Update the 'updated' and 'published' fields to the current time
-    current_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    current_time = current_time_iso8601()
     stac_item["properties"]["updated"] = current_time
     stac_item["properties"]["published"] = current_time
 
@@ -128,7 +129,7 @@ def update_stac_item_failure(
     stac_item["properties"]["order_failure_reason"] = reason
 
     # Update the 'updated' field to the current time
-    current_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    current_time = current_time_iso8601()
     stac_item["properties"]["updated"] = current_time
 
     # Create local record of attempted order, to be used as the workflow output
@@ -152,7 +153,7 @@ def update_stac_item_ordered(
     update_stac_order_status(stac_item, order_id, OrderStatus.ORDERED.value)
 
     # Update the 'updated' field to the current time
-    current_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    current_time = current_time_iso8601()
     stac_item["properties"]["updated"] = current_time
     stac_item["properties"]["order.date"] = current_time
 
