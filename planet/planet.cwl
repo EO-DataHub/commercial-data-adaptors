@@ -12,16 +12,16 @@ $graph:
     doc: Order and load data from the Planet catalogue into a workspace
     inputs:
       workspace:
-        label: workspace name
-        doc: name of workspace
+        label: Workspace name
+        doc: Name of workspace
         type: string
       workspace_bucket:
-        label: bucket within which workspace data is stored
-        doc: bucket within which workspace data is stored
+        label: Bucket within which workspace data is stored
+        doc: Bucket within which workspace data is stored
         type: string
       commercial_data_bucket:
-        label: bucket from which commercial data will be received
-        doc: bucket from which commercial data will be received
+        label: Bucket from which commercial data will be received
+        doc: Bucket from which commercial data will be received
         type: string
       pulsar_url:
         label: URL to inform the pulsar environment of STAC updates
@@ -32,12 +32,12 @@ $graph:
         doc: Product bundles comprise of a group of assets for an item. In the Planet API, an item is an entry in our catalog, and generally represents a single logical observation (or scene) captured by a satellite. Each item is defined by an item_type, which represents the class of spacecraft and/or processing level of the item
         type: string
       coordinates:
-        label: coordinates of any AOI
-        doc: coordinates of any AOI
+        label: Coordinates of any AOI
+        doc: Coordinates of any AOI
         type: string
       stac_key:
-        label: path to stac item in s3 describing data to order and download
-        doc: path to stac item in s3 describing data to order and download
+        label: Path to stac item in s3 describing data to order and download
+        doc: Path to stac item in s3 describing data to order and download
         type: Directory
     outputs:
       - id: results

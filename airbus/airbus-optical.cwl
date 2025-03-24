@@ -12,16 +12,16 @@ $graph:
     doc: Order and load data from the Airbus optical catalogue into a workspace
     inputs:
       workspace:
-        label: workspace name
-        doc: name of workspace
+        label: Workspace name
+        doc: Name of workspace
         type: string
       workspace_bucket:
-        label: bucket within which workspace data is stored
-        doc: bucket within which workspace data is stored
+        label: Bucket within which workspace data is stored
+        doc: Bucket within which workspace data is stored
         type: string
       commercial_data_bucket:
-        label: bucket from which commercial data will be received
-        doc: bucket from which commercial data will be received
+        label: Bucket from which commercial data will be received
+        doc: Bucket from which commercial data will be received
         type: string
       pulsar_url:
         label: URL to inform the pulsar environment of STAC updates
@@ -36,16 +36,16 @@ $graph:
         doc: List of coordinates for the area of interest
         type: string
       stac_key:
-        label: path to stac item in s3 describing data to order and download
-        doc: path to stac item in s3 describing data to order and download
+        label: Path to stac item in s3 describing data to order and download
+        doc: Path to stac item in s3 describing data to order and download
         type: Directory
       end_users:
         label: List of end users and nationalities. Only required for PNEO orders
         doc: List of end users and nationalities. Only required for PNEO orders
         type: string
       licence:
-        label: Licence used for the order.
-        doc: Licence used for the order.
+        label: Licence used for the order
+        doc: Licence used for the order
         type: string
     outputs:
       - id: results
