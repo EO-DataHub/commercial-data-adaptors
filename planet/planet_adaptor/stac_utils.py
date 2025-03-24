@@ -1,12 +1,27 @@
 import json
 import logging
 import os
+from datetime import datetime, timezone
 from typing import List, Union
+
+import boto3
 
 Coordinate = Union[List[float], tuple[float, float]]
 
 
-def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, item_id: str):
+def current_time_iso8601() -> str:
+    """Return the current time in ISO 8601 format"""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def write_stac_item_and_catalog(
+    stac_item: dict,
+    stac_item_filename: str,
+    collection_id: str,
+    item_id: str,
+    workspace: str,
+    workspaces_bucket: str,
+):
     """Creates local catalog containing final STAC item to be used as a record for the order"""
     # Rewrite STAC links to point to local files only
     stac_item["links"] = [
@@ -18,29 +33,88 @@ def write_stac_item_and_catalog(stac_item: dict, stac_item_filename: str, item_i
     with open(stac_item_filename, "w") as f:
         json.dump(stac_item, f, indent=2)
     logging.info(f"Created STAC item '{stac_item_filename}' locally.")
-    logging.debug(f"STAC item: {stac_item}")
+    logging.info(f"STAC item: {stac_item}")
 
     # If not item_id, the order has failed
     if not item_id:
         item_id = "Failed"
 
     # Create containing STAC catalog
-    stac_catalog = {
-        "stac_version": "1.0.0",
-        "id": "catalog",
-        "type": "Catalog",
-        "description": f"Root catalog for order {stac_item_filename}-{item_id}",
-        "links": [
-            {"rel": "self", "href": "catalog.json", "type": "application/json"},
-            {"rel": "item", "href": stac_item_filename, "type": "application/json"},
-        ],
-    }
+    try:
+        # obtain the existing catalog from s3 if possible
+        s3_client = boto3.client("s3")
+        key = f"{workspace}/commercial-data/planet.json"
+        logging.info(f"Retrieving existing catalog from s3: {key}, {workspaces_bucket}")
+        response = s3_client.get_object(Bucket=workspaces_bucket, Key=key)
+        stac_catalog = json.loads(response["Body"].read())
+
+    except Exception as e:
+        logging.info(f"Failed to retrieve existing collection from s3: {e}")
+        logging.info("Creating default collection")
+        stac_catalog = {
+            "stac_version": "1.0.0",
+            "id": "planet",
+            "type": "Catalog",
+            "description": "Order records for Planet, including completed purchases with their associated assets, as well as records of ongoing and failed orders.",
+            "links": [],
+        }
+    stac_catalog["links"] = [
+        {"rel": "self", "href": "catalog.json", "type": "application/json"},
+        {"rel": "child", "href": "collection.json", "type": "application/json"},
+    ]
 
     # Write the STAC catalog to a file
     with open("catalog.json", "w") as f:
         json.dump(stac_catalog, f, indent=2)
     logging.info("Created STAC catalog catalog.json locally.")
-    logging.debug(f"STAC catalog: {stac_catalog}")
+    logging.info(f"STAC catalog: {stac_catalog}")
+
+    try:
+        # obtain the existing collection from s3 if possible
+        s3_client = boto3.client("s3")
+        key = f"{workspace}/commercial-data/planet/{collection_id}.json"
+        logging.info(
+            f"Retrieving existing collection from s3: {key}, {workspaces_bucket}"
+        )
+        response = s3_client.get_object(Bucket=workspaces_bucket, Key=key)
+        stac_collection = json.loads(response["Body"].read())
+
+    except Exception as e:
+        logging.info(f"Failed to retrieve existing collection from s3: {e}")
+        logging.info("Creating default collection")
+        stac_collection = {
+            "stac_version": "1.0.0",
+            "id": collection_id,
+            "type": "Collection",
+            "description": f"Order records for {collection_id.capitalize().replace('_', ' ')}, including completed purchases with their associated assets, as well as records of ongoing and failed orders.",
+            "license": "proprietary",
+            "links": [],
+            "keywords": ["planet"],
+            "extent": {
+                "spatial": {"bbox": [[-180, -90, 180, 90]]},
+                "temporal": {
+                    "interval": [
+                        [
+                            "2010-01-01T00:00:00Z",
+                            current_time_iso8601(),
+                        ]
+                    ]
+                },
+            },
+        }
+    stac_collection["links"] = [
+        {"rel": "self", "href": "collection.json", "type": "application/json"},
+        {"rel": "root", "href": "catalog.json", "type": "application/json"},
+        {"rel": "parent", "href": "catalog.json", "type": "application/json"},
+        {"rel": "item", "href": stac_item_filename, "type": "application/json"},
+    ]
+
+    # Write the STAC catalog to a file
+    with open("collection.json", "w") as f:
+        json.dump(stac_collection, f, indent=2)
+    logging.info("Created STAC collection collection.json locally.")
+    logging.debug(f"STAC collection: {stac_collection}")
+    logging.info(f"STAC collection: {stac_collection}")
 
 
 def update_stac_order_status(stac_item: dict, order_id: str, order_status: str):

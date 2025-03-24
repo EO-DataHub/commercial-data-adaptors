@@ -11,6 +11,7 @@ def post_submit_order(
     coordinates: list,
     order_options: dict,
     workspace: str,
+    licence: str,
     item_uuids: list = None,
     end_users: list = None,
 ) -> str:
@@ -71,7 +72,7 @@ def post_submit_order(
                     {"key": "delivery_method", "value": "on_the_flow"},
                     {"key": "fullStrip", "value": "false"},
                     {"key": "image_format", "value": "dimap_geotiff"},
-                    {"key": "licence", "value": "standard"},
+                    {"key": "licence", "value": licence},
                     {"key": "pixel_coding", "value": order_options.get("pixelCoding")},
                     {"key": "priority", "value": "standard"},
                     {
@@ -112,11 +113,9 @@ def post_submit_order(
         "Content-Type": "application/json",
     }
 
-    logging.info(request_body)
-    body = request_body
-    # response = requests.post(url, json=request_body, headers=headers)
-    # response.raise_for_status()
-    #
-    # body = response.json()
+    response = requests.post(url, json=request_body, headers=headers)
+    response.raise_for_status()
+
+    body = response.json()
     logging.info(f"Order submitted: {body}")
     return body.get("salesOrderId"), customer_reference

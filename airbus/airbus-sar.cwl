@@ -11,9 +11,17 @@ $graph:
     label: Airbus SAR Adaptor
     doc: Order and load data from the Airbus SAR catalogue into a workspace
     inputs:
+      workspace_bucket:
+        label: Bucket within which workspace data is stored
+        doc: Bucket within which workspace data is stored
+        type: string
       commercial_data_bucket:
-        label: bucket from which commercial data will be received
-        doc: bucket from which commercial data will be received
+        label: Bucket from which commercial data will be received
+        doc: Bucket from which commercial data will be received
+        type: string
+      pulsar_url:
+        label: URL to inform the pulsar environment of STAC updates
+        doc: URL to inform the pulsar environment of STAC updates
         type: string
       product_bundle:
         label: Reference to a group of settings describing parameters for an order
@@ -24,12 +32,16 @@ $graph:
         doc: List of coordinates for the area of interest
         type: string
       stac_key:
-        label: path to stac item in s3 describing data to order and download
-        doc: path to stac item in s3 describing data to order and download
+        label: Path to stac item in s3 describing data to order and download
+        doc: Path to stac item in s3 describing data to order and download
         type: Directory
+      licence:
+        label: Licence used for the order
+        doc: Licence used for the order
+        type: string
       workspace:
-        label: workspace final destination of the order
-        doc: workspace final destination of the order
+        label: Workspace final destination of the order
+        doc: Workspace final destination of the order
         type: string
     outputs:
       - id: results
@@ -40,10 +52,13 @@ $graph:
       airbus-sar-adaptor:
         run: "#airbus-sar-adaptor"
         in:
+          workspace_bucket: workspace_bucket
           commercial_data_bucket: commercial_data_bucket
+          pulsar_url: pulsar_url
           product_bundle: product_bundle
           coordinates: coordinates
           stac_key: stac_key
+          licence: licence
           workspace: workspace
         out:
           - results
@@ -52,32 +67,45 @@ $graph:
     id: airbus-sar-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/airbus-sar-adaptor:0.0.6-rc3
+        dockerPull: public.ecr.aws/eodh/airbus-sar-adaptor:0.0.7-rc8
     baseCommand: ["python", "-m", "airbus_sar_adaptor"]
     inputs:
-      commercial_data_bucket:
+      workspace_bucket:
         type: string
         inputBinding:
           position: 1
-      product_bundle:
+      commercial_data_bucket:
         type: string
         inputBinding:
           position: 2
+      pulsar_url:
+        type: string
+        inputBinding:
+          position: 3
+      product_bundle:
+        type: string
+        inputBinding:
+          position: 4
       coordinates:
         type: string
         inputBinding:
           prefix: --coordinates
-          position: 3
+          position: 5
       stac_key:
         type: Directory
         inputBinding:
           prefix: --catalogue_dirs
-          position: 4
+          position: 6
+      licence:
+        type: string
+        inputBinding:
+          prefix: --licence
+          position: 7
       workspace:
         type: string
         inputBinding:
           prefix: --workspace
-          position: 5
+          position: 8
 
 
     outputs:

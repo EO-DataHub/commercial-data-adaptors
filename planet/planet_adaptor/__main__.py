@@ -9,6 +9,8 @@ import os
 from enum import Enum
 from typing import List
 
+import boto3
+import pulsar
 from planet_adaptor.api_utils import (
     create_order_request,
     define_delivery,
@@ -22,6 +24,7 @@ from planet_adaptor.s3_utils import (
     retrieve_stac_item,
 )
 from planet_adaptor.stac_utils import (
+    current_time_iso8601,
     get_item_hrefs_from_catalogue,
     get_key_from_stac,
     update_stac_order_status,
@@ -65,7 +68,13 @@ product_bundle_map = {
 
 
 def update_stac_item_success(
-    stac_item: dict, file_name: str, order_name: str, directory: str
+    stac_item: dict,
+    file_name: str,
+    collection_id: str,
+    order_name: str,
+    directory: str,
+    workspace: str,
+    workspaces_bucket: str,
 ):
     """Update the STAC item with the assets and success order status"""
     # Add all files in the directory as assets to the STAC item
@@ -87,24 +96,133 @@ def update_stac_item_success(
     # Mark the order as succeeded and upload the updated STAC item
     update_stac_order_status(stac_item, order_name, OrderStatus.SUCCEEDED.value)
 
+    # Update the 'updated' and 'published' fields to the current time
+    current_time = current_time_iso8601()
+    stac_item["properties"]["updated"] = current_time
+    stac_item["properties"]["published"] = current_time
+
     # Create local record of the order, to be used as the workflow output
-    write_stac_item_and_catalog(stac_item, file_name, order_name)
+    write_stac_item_and_catalog(
+        stac_item, file_name, collection_id, order_name, workspace, workspaces_bucket
+    )
 
     # Adding this for debugging purposes later on, just in case
     logging.info(f"Files in current working directory: {os.getcwd()}")
     logging.info(list(glob.iglob("./**/*", recursive=True)))
 
 
-def update_stac_item_failure(stac_item: dict, file_name: str, order_name: str) -> None:
+def update_stac_item_failure(
+    stac_item: dict,
+    file_name: str,
+    collection_id: str,
+    reason: str,
+    workspace: str,
+    workspace_bucket: str,
+    order_name: str,
+) -> None:
     """Update the STAC item with the failure order status"""
     # Mark the order as failed in the local STAC item
     update_stac_order_status(stac_item, order_name, OrderStatus.FAILED.value)
 
+    # Mark the reason for the failure in the local STAC item
+    stac_item["properties"]["order_failure_reason"] = reason
+
+    # Update the 'updated' field to the current time
+    current_time = current_time_iso8601()
+    stac_item["properties"]["updated"] = current_time
+
     # Create local record of attempted order, to be used as the workflow output
-    write_stac_item_and_catalog(stac_item, file_name, order_name)
+    write_stac_item_and_catalog(
+        stac_item, file_name, collection_id, order_name, workspace, workspace_bucket
+    )
+
+
+def update_stac_item_ordered(
+    stac_item: dict,
+    collection_id: str,
+    item_id: str,
+    order_id: str,
+    s3_bucket: str,
+    pulsar_url: str,
+    workspace: str,
+):
+    """Update the STAC item with the ordered order status"""
+    logging.info(f"Updating STAC item with order ID: {order_id} to 'ordered' status.")
+    # Mark the order as ordered in the local STAC item
+    update_stac_order_status(stac_item, order_id, OrderStatus.ORDERED.value)
+
+    # Update the 'updated' field to the current time
+    current_time = current_time_iso8601()
+    stac_item["properties"]["updated"] = current_time
+    stac_item["properties"]["order.date"] = current_time
+
+    # Ingest the updated STAC item to the catalog
+    try:
+        ingest_stac_item(
+            stac_item, s3_bucket, pulsar_url, workspace, collection_id, item_id
+        )
+    except Exception as e:
+        logging.error(f"Failed to ingest STAC item: {e}", exc_info=True)
+
+
+def ingest_stac_item(
+    stac_item: dict,
+    s3_bucket: str,
+    pulsar_url: str,
+    workspace: str,
+    collection_id: str,
+    item_id: str,
+):
+    """Ingest the STAC item to the S3 bucket and send a Pulsar message"""
+    # Upload the STAC item to S3
+    s3_client = boto3.client("s3")
+    parent_catalog_name = "commercial-data"
+
+    item_key = (
+        f"{workspace}/{parent_catalog_name}/planet/{collection_id}/{item_id}.json"
+    )
+    s3_client.put_object(Body=json.dumps(stac_item), Bucket=s3_bucket, Key=item_key)
+
+    logging.info(
+        f"Uploaded STAC item to S3 bucket '{s3_bucket}' with key '{item_key}'."
+    )
+
+    transformed_item_key = (
+        f"transformed/catalogs/user/catalogs/{workspace}/catalogs/{parent_catalog_name}/catalogs/"
+        f"planet/collections/{collection_id}/items/{item_id}.json"
+    )
+    s3_client.put_object(
+        Body=json.dumps(stac_item), Bucket=s3_bucket, Key=transformed_item_key
+    )
+
+    logging.info(
+        f"Uploaded STAC item to S3 bucket '{s3_bucket}' with key '{transformed_item_key}'."
+    )
+
+    # Send a Pulsar message
+    pulsar_client = pulsar.Client(pulsar_url)
+    producer = pulsar_client.create_producer(
+        topic="transformed", producer_name=f"data_adaptor-{workspace}-{item_id}"
+    )
+    output_data = {
+        "id": f"{workspace}/update_order",
+        "workspace": workspace,
+        "bucket_name": s3_bucket,
+        "added_keys": [],
+        "updated_keys": [transformed_item_key],
+        "deleted_keys": [],
+        "source": "/",
+        "target": "/",
+    }
+    producer.send((json.dumps(output_data)).encode("utf-8"))
+    logging.info(f"Sent Pulsar message {output_data}.")
+
+    # Close the Pulsar client
+    pulsar_client.close()
 
 
 async def get_existing_order_details(workspace, order_name) -> dict:
+    """Retrieve details of an existing order from the Planet API"""
     planet_api_key = get_planet_api_key(workspace)
     auth = planet.Auth.from_key(planet_api_key)
 
@@ -170,7 +288,9 @@ def hash_aoi(coordinates):
 
 def main(
     workspace: str,
+    workspace_bucket: str,
     commercial_data_bucket: str,
+    pulsar_url: str,
     product_bundle_category: str,
     coordinates: List,
     catalogue_dirs: List[str],
@@ -220,10 +340,17 @@ def main(
             logging.info(f"Order status: {order_status}")
             if order_status in ["queued", "running"]:
                 submitted_order_id = order.get("id")
-                logging.info(
-                    f"Order for {stac_item.item_id} has already been submitted: {submitted_order_id}"
+                reason = f"Order for {stac_item.item_id} has already been submitted: {submitted_order_id}"
+                logging.info(reason)
+                update_stac_item_failure(
+                    stac_item.stac_json,
+                    stac_item.file_name,
+                    stac_item.collection_id,
+                    reason,
+                    workspace,
+                    workspace_bucket,
+                    None,
                 )
-                update_stac_item_failure(stac_item.stac_json, stac_item.file_name, None)
                 return
 
             if not order_status == "success":
@@ -249,11 +376,29 @@ def main(
             logging.info(f"Found order ID {order_id}")
 
         except Exception as e:
-            logging.error(f"Failed to submit order: {e}", exc_info=True)
+            reason = f"Failed to submit order: {e}"
+            logging.error(reason, exc_info=True)
             update_stac_item_failure(
-                stac_item.stac_json, stac_item.file_name, order_name
+                stac_item.stac_json,
+                stac_item.file_name,
+                stac_item.collection_id,
+                reason,
+                workspace,
+                workspace_bucket,
+                order_name,
             )
             return
+
+        # Update the STAC record after submitting the order
+        update_stac_item_ordered(
+            stac_item.stac_json,
+            stac_item.collection_id,
+            stac_item.item_id,
+            order_id,
+            workspace_bucket,
+            pulsar_url,
+            workspace,
+        )
 
         try:
             # Wait for data from planet to arrive, then move it to the workspace
@@ -267,20 +412,37 @@ def main(
                 commercial_data_bucket, f"{delivery_folder}/{order_id}", "assets"
             )
         except Exception as e:
-            logging.error(f"Failed to retrieve data: {e}", exc_info=True)
-            update_stac_item_failure(stac_item.stac_json, stac_item.file_name, order_id)
+            reason = f"Failed to retrieve data: {e}"
+            logging.error(reason, exc_info=True)
+            update_stac_item_failure(
+                stac_item.stac_json,
+                stac_item.file_name,
+                stac_item.collection_id,
+                reason,
+                workspace,
+                workspace_bucket,
+                order_id,
+            )
             return
         update_stac_item_success(
-            stac_item.stac_json, stac_item.file_name, order_name, "assets"
+            stac_item.stac_json,
+            stac_item.file_name,
+            stac_item.collection_id,
+            order_name,
+            "assets",
+            workspace,
+            workspace_bucket,
         )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Order Planet data")
     parser.add_argument("workspace", type=str, help="Workspace name")
+    parser.add_argument("workspace_bucket", type=str, help="Workspace bucket")
     parser.add_argument(
         "commercial_data_bucket", type=str, help="Commercial data bucket"
     )
+    parser.add_argument("pulsar_url", type=str, help="Pulsar URL")
     parser.add_argument("product_bundle", type=str, help="Product bundle")
     parser.add_argument("coordinates", type=str, help="Stringified list of coordinates")
     parser.add_argument(
@@ -295,7 +457,9 @@ if __name__ == "__main__":
 
     main(
         args.workspace,
+        args.workspace_bucket,
         args.commercial_data_bucket,
+        args.pulsar_url,
         args.product_bundle,
         coordinates,
         args.catalogue_dirs,
