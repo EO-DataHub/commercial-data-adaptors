@@ -55,7 +55,7 @@ def write_stac_item_and_catalog(
             "stac_version": "1.0.0",
             "id": "planet",
             "type": "Catalog",
-            "description": "Purchased Planet satellite imagery, including both completed purchases and ongoing order records",
+            "description": "Order records for Planet, including completed purchases with their associated assets, as well as records of ongoing and failed orders.",
             "links": [],
         }
     stac_catalog["links"] = [
@@ -86,7 +86,7 @@ def write_stac_item_and_catalog(
             "stac_version": "1.0.0",
             "id": collection_id,
             "type": "Collection",
-            "description": f"Purchased {collection_id.capitalize().replace('_', ' ')} satellite imagery, including both completed purchases and ongoing order records",
+            "description": f"Order records for {collection_id.capitalize().replace('_', ' ')}, including completed purchases with their associated assets, as well as records of ongoing and failed orders.",
             "license": "proprietary",
             "links": [],
             "keywords": ["planet"],
