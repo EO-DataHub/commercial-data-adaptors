@@ -152,12 +152,12 @@ def create_order_request(
         ]
     else:
         products = [
-                planet.order_request.product(
-                    item_ids=[item_id],
-                    product_bundle=product_bundle,
-                    item_type=collection_id,
-                )
-            ]
+            planet.order_request.product(
+                item_ids=[item_id],
+                product_bundle=product_bundle,
+                item_type=collection_id,
+            )
+        ]
 
     order = planet.order_request.build_request(
         name=order_id,
