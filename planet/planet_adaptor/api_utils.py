@@ -140,15 +140,28 @@ def create_order_request(
         "coordinates": coordinates,
     }
 
-    order = planet.order_request.build_request(
-        name=order_id,
-        products=[
+    product_bundles = product_bundle.split(",")
+    if len(product_bundles) == 2:
+        products = [
             planet.order_request.product(
                 item_ids=[item_id],
-                product_bundle=product_bundle,
+                product_bundle=product_bundles[0],
+                fallback_bundle=product_bundles[1],
                 item_type=collection_id,
             )
-        ],
+        ]
+    else:
+        products = [
+                planet.order_request.product(
+                    item_ids=[item_id],
+                    product_bundle=product_bundle,
+                    item_type=collection_id,
+                )
+            ]
+
+    order = planet.order_request.build_request(
+        name=order_id,
+        products=products,
         tools=[planet.order_request.clip_tool(aoi=aoi)],
         delivery=delivery,
     )
