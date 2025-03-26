@@ -140,7 +140,7 @@ def create_order_request(
         "coordinates": coordinates,
     }
 
-    product_bundles = product_bundle.split(",")
+    product_bundles = product_bundle["name"].split(",")
     if len(product_bundles) == 2:
         products = [
             planet.order_request.product(
@@ -154,17 +154,28 @@ def create_order_request(
         products = [
             planet.order_request.product(
                 item_ids=[item_id],
-                product_bundle=product_bundle,
+                product_bundle=product_bundle["name"],
                 item_type=collection_id,
             )
         ]
 
-    order = planet.order_request.build_request(
-        name=order_id,
-        products=products,
-        tools=[planet.order_request.clip_tool(aoi=aoi)],
-        delivery=delivery,
-    )
+    if product_bundle.get("allow_clip", True):
+        order = planet.order_request.build_request(
+            name=order_id,
+            products=products,
+            tools=[planet.order_request.clip_tool(aoi=aoi)],
+            delivery=delivery,
+        )
+    else:
+        logging.warning(
+            f"Product bundle {product_bundle['name']} does not allow clipping for AOI. "
+            f"Requesting full image"
+        )
+        order = planet.order_request.build_request(
+            name=order_id,
+            products=products,
+            delivery=delivery,
+        )
 
     return order
 

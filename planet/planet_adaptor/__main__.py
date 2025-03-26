@@ -53,16 +53,19 @@ class OrderStatus(Enum):
 
 product_bundle_map = {
     "PSScene": {
-        "Visual": "visual",
-        "General use": "analytic_8b_sr_udm2,analytic_sr_udm2",
-        "Analytic": "analytic_8b_sr_udm2,analytic_sr_udm2",
-        "Basic": "basic_analytic_8b_udm2,basic_analytic_udm2",
+        "Visual": {"name": "visual"},
+        "General use": {"name": "analytic_8b_sr_udm2,analytic_sr_udm2"},
+        "Analytic": {"name": "analytic_8b_sr_udm2,analytic_sr_udm2"},
+        "Basic": {
+            "name": "basic_analytic_8b_udm2,basic_analytic_udm2",
+            "allow_clip": False,
+        },
     },
     "SkySatCollect": {
-        "Visual": "visual",
-        "General use": "pansharpened_udm2",
-        "Analytic": "analytic_sr_udm2",
-        "Basic": "basic_analytic_udm2",
+        "Visual": {"name": "visual"},
+        "General use": {"name": "pansharpened_udm2"},
+        "Analytic": {"name": "analytic_sr_udm2"},
+        "Basic": {"name": "basic_analytic_udm2"},
     },
 }
 
