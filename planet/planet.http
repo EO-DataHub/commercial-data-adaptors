@@ -2,14 +2,14 @@
 @apiToken=<apiToken>
 
 @scheme = https
-@ades=dev.eodatahub.org.uk/ades
+@ades=staging.eodatahub.org.uk/api/catalogue/stac/catalogs/user/catalogs
 @username=planet
 @workspace = apalmer-tpzuk
 @stacKey = s3://workspaces-eodhp-dev/apalmer-tpzuk/commercial-data/collections/planet_data/items/20250108_060619_22_24c4.json
-@commercialBucket = workspaces-eodhp-dev
+@commercialBucket = workspaces-eodhp-staging
 @productBundle = analytic_udm2
 @pulsarUrl = pulsar://pulsar-broker.pulsar:6650
-@workspaceBucket = workspaces-eodhp-dev3
+@workspaceBucket = workspaces-eodhp-staging
 @coordinates = [[[-8.04575859845228, 31.7018335608202], [-8.13085357903705, 31.6969488507275], [-8.1302277917, 31.6038867332], [-8.02977481420451, 31.5982362108166], [-7.95210682318346, 31.603078531553], [-7.9521185644, 31.6961852319], [-8.04575859845228, 31.7018335608202]]]
 
 @deployStatus = {{deployProcessJson.response.headers.Location}}
@@ -18,7 +18,7 @@
 ###
 
 # @name deleteProcess
-DELETE {{scheme}}://{{ades}}/planet/ogc-api/processes/planet-adaptor HTTP/1.1
+DELETE {{scheme}}://{{ades}}/planet/processes/planet-adaptor HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
@@ -26,14 +26,14 @@ Accept: application/json
 
 
 # @name listProcesses
-GET {{scheme}}://{{ades}}/planet/ogc-api/processes HTTP/1.1
+GET {{scheme}}://{{ades}}/planet/processes HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
 ###
 
 # @name deployProcessJson
-POST {{scheme}}://{{ades}}/planet/ogc-api/processes HTTP/1.1
+POST {{scheme}}://{{ades}}/planet/processes HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 Content-Type: application/cwl+yaml
@@ -50,14 +50,14 @@ Accept: application/json
 ###
 
 # @name getProcessDetails
-GET {{scheme}}://{{ades}}/planet/ogc-api/processes/planet-adaptor HTTP/1.1
+GET {{scheme}}://{{ades}}/planet/processes/planet-adaptor HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
 ###
 
 # @name executeProcess
-POST {{scheme}}://{{ades}}/planet/ogc-api/processes/planet-adaptor/execution HTTP/1.1
+POST {{scheme}}://{{ades}}/planet/processes/planet-adaptor/execution HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 Content-Type: application/json
@@ -92,15 +92,25 @@ Accept: application/json
 ###
 
 # @name undeployProcess
-DELETE {{scheme}}://{{ades}}/planet/ogc-api/processes/planet-adaptor HTTP/1.1
+DELETE {{scheme}}://{{ades}}/planet/processes/planet-adaptor HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
 ###
 
 # @name listJobs
-GET {{scheme}}://{{ades}}/planet/ogc-api/jobs HTTP/1.1
+GET {{scheme}}://{{ades}}/planet/jobs HTTP/1.1
 Authorization: Bearer {{apiToken}}
 Accept: application/json
 
 ###
+
+# @name linkAccount
+POST https://staging.eodatahub.org.uk/api/workspaces/{{workspace}}/linked-accounts
+Authorization: Bearer {{apiToken}}
+Content-Type: : application/json
+
+{
+    "name": "planet",
+    "key": "<insert key here>"
+}
