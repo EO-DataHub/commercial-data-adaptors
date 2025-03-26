@@ -5,7 +5,9 @@ import requests
 from common.auth_utils import generate_access_token
 
 
-def get_projection(contract_id: str, product_type: str, coordinates: list, workspace: str) -> str:
+def get_projection(
+    contract_id: str, product_type: str, coordinates: list, workspace: str
+) -> str:
     """Get the projection for the given coordinates"""
     url = f"https://order.api.oneatlas.airbus.com/api/v1/contracts/{contract_id}/productTypes/{product_type}/options"
 
