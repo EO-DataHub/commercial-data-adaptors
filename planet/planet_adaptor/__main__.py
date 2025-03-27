@@ -65,7 +65,7 @@ product_bundle_map = {
         "Visual": {"name": "visual"},
         "General use": {"name": "pansharpened_udm2"},
         "Analytic": {"name": "analytic_sr_udm2"},
-        "Basic": {"name": "basic_analytic_udm2"},
+        "Basic": {"name": "analytic_udm2"},
     },
 }
 
