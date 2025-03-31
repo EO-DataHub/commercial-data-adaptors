@@ -330,10 +330,10 @@ def main(
             )
 
         if coordinates:
-            order_name = f"{stac_item.item_id}-{workspace}-{ProductBundleCode[product_bundle_category].name}-{hash_aoi(coordinates)}"
+            order_name = f"{stac_item.item_id}-{workspace}-{ProductBundleCode(product_bundle_category).name}-{hash_aoi(coordinates)}"
         else:
             coordinates = stac_item.coordinates
-            order_name = f"{stac_item.item_id}-{workspace}-{ProductBundleCode[product_bundle_category].name}"
+            order_name = f"{stac_item.item_id}-{workspace}-{ProductBundleCode(product_bundle_category).name}"
 
         logging.info(f"Coordinates: {coordinates}")
         if not verify_coordinates(coordinates):
