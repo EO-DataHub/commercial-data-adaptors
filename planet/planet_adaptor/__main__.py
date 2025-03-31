@@ -51,18 +51,28 @@ class OrderStatus(Enum):
     FAILED = "failed"
 
 
+class ProductBundleCode(Enum):
+    V = "Visual"
+    G = "General use"
+    A = "Analytic"
+    B = "Basic"
+
+
 product_bundle_map = {
     "PSScene": {
-        "Visual": "visual",
-        "General use": "analytic_8b_sr_udm2,analytic_sr_udm2",
-        "Analytic": "analytic_8b_sr_udm2,analytic_sr_udm2",
-        "Basic": "basic_analytic_8b_udm2,basic_analytic_udm2",
+        "Visual": {"name": "visual"},
+        "General use": {"name": "analytic_8b_sr_udm2,analytic_sr_udm2"},
+        "Analytic": {"name": "analytic_8b_sr_udm2,analytic_sr_udm2"},
+        "Basic": {
+            "name": "basic_analytic_8b_udm2,basic_analytic_udm2",
+            "allow_clip": False,
+        },
     },
     "SkySatCollect": {
-        "Visual": "visual",
-        "General use": "pansharpened_udm2",
-        "Analytic": "analytic_sr_udm2",
-        "Basic": "basic_analytic_udm2",
+        "Visual": {"name": "visual"},
+        "General use": {"name": "pansharpened_udm2"},
+        "Analytic": {"name": "analytic_sr_udm2"},
+        "Basic": {"name": "analytic_udm2"},
     },
 }
 
@@ -154,7 +164,7 @@ def update_stac_item_ordered(
     # Update the 'updated' field to the current time
     current_time = current_time_iso8601()
     stac_item["properties"]["updated"] = current_time
-    stac_item["properties"]["order.date"] = current_time
+    stac_item["properties"]["order:date"] = current_time
 
     # Ingest the updated STAC item to the catalog
     try:
@@ -258,7 +268,7 @@ class STACItem:
         self.item_id = get_key_from_stac(self.stac_json, "id")
         self.collection_id = get_key_from_stac(self.stac_json, "properties.item_type")
         self.coordinates = get_key_from_stac(self.stac_json, "geometry.coordinates")
-        self.order_status = get_key_from_stac(self.stac_json, "order.status")
+        self.order_status = get_key_from_stac(self.stac_json, "order:status")
 
 
 def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
@@ -297,7 +307,9 @@ def main(
 ) -> None:
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
-    logging.info(catalogue_dirs)
+    logging.info(
+        f"Preparing {product_bundle_category} data for {workspace} for the following: {catalogue_dirs}"
+    )
     stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
 
     for stac_item in stac_items:
@@ -318,10 +330,10 @@ def main(
             )
 
         if coordinates:
-            order_name = f"{stac_item.item_id}-{workspace}-{hash_aoi(coordinates)}"
+            order_name = f"{stac_item.item_id}-{workspace}-{ProductBundleCode(product_bundle_category).name}-{hash_aoi(coordinates)}"
         else:
             coordinates = stac_item.coordinates
-            order_name = f"{stac_item.item_id}-{workspace}"
+            order_name = f"{stac_item.item_id}-{workspace}-{ProductBundleCode(product_bundle_category).name}"
 
         logging.info(f"Coordinates: {coordinates}")
         if not verify_coordinates(coordinates):

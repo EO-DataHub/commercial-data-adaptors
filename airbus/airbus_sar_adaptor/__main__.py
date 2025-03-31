@@ -31,7 +31,7 @@ class STACItem:
         self.stac_json = retrieve_stac_item(stac_item_path)
         self.acquisition_id = get_key_from_stac(self.stac_json, "id")
         self.collection_id = get_key_from_stac(self.stac_json, "collection")
-        self.order_status = get_key_from_stac(self.stac_json, "order.status")
+        self.order_status = get_key_from_stac(self.stac_json, "order:status")
 
 
 def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:

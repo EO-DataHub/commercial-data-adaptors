@@ -1,6 +1,8 @@
 import base64
+import datetime
 import json
 import logging
+import re
 
 import boto3
 from kubernetes import client, config
@@ -140,7 +142,7 @@ def create_order_request(
         "coordinates": coordinates,
     }
 
-    product_bundles = product_bundle.split(",")
+    product_bundles = product_bundle["name"].split(",")
     if len(product_bundles) == 2:
         products = [
             planet.order_request.product(
@@ -154,17 +156,28 @@ def create_order_request(
         products = [
             planet.order_request.product(
                 item_ids=[item_id],
-                product_bundle=product_bundle,
+                product_bundle=product_bundle["name"],
                 item_type=collection_id,
             )
         ]
 
-    order = planet.order_request.build_request(
-        name=order_id,
-        products=products,
-        tools=[planet.order_request.clip_tool(aoi=aoi)],
-        delivery=delivery,
-    )
+    if product_bundle.get("allow_clip", True):
+        order = planet.order_request.build_request(
+            name=order_id,
+            products=products,
+            tools=[planet.order_request.clip_tool(aoi=aoi)],
+            delivery=delivery,
+        )
+    else:
+        logging.warning(
+            f"Product bundle {product_bundle['name']} does not allow clipping for AOI. "
+            f"Requesting full image"
+        )
+        order = planet.order_request.build_request(
+            name=order_id,
+            products=products,
+            delivery=delivery,
+        )
 
     return order
 
@@ -176,7 +189,22 @@ async def submit_order(workspace: str, order_details: dict) -> str:
     async with planet.Session(auth=auth) as sess:
         # 'orders' is the service name for the Orders API.
         cl = sess.client("orders")
+        try:
+            order = await cl.create_order(order_details)
+            return order
 
-        order = await cl.create_order(order_details)
+        except Exception as e:
+            message = str(e)
+            if "400 Bad Request" in message or "Unable to accept order" in message:
+                search = re.compile(r"([0-9]{8}_[0-9]{6})")
+                item_id = order_details.get("name")
+                dates = search.findall(item_id)
+                asset_timestamp = datetime.datetime.strptime(dates[0], "%Y%m%d_%H%M%S")
+                if asset_timestamp > datetime.datetime.now() - datetime.timedelta(
+                    hours=12
+                ):
+                    raise Exception(
+                        "Order failed without using quota: Assets are not yet available for recent data. Please try again later."
+                    )
 
-        return order
+            raise Exception from e
