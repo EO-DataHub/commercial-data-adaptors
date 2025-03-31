@@ -1,8 +1,8 @@
 import base64
+import datetime
 import json
 import logging
 import re
-import datetime
 
 import boto3
 from kubernetes import client, config
