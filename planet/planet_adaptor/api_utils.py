@@ -196,10 +196,14 @@ async def submit_order(workspace: str, order_details: dict) -> str:
         except planet.exceptions.BadRequest as e:
             message = str(e)
             if "no access to assets" in message:
-                search = re.compile(r'([0-9]{8}_[0-9]{6})')
+                search = re.compile(r"([0-9]{8}_[0-9]{6})")
                 dates = search.findall(message)
-                asset_timestamp = datetime.datetime.strptime(dates[0], '%Y%m%d_%H%M%S')
-                if asset_timestamp < datetime.datetime.now() - datetime.timedelta(hours=12):
-                    raise Exception("Order failed without using quota: Assets are not yet available for recent data. Please try again later.")
+                asset_timestamp = datetime.datetime.strptime(dates[0], "%Y%m%d_%H%M%S")
+                if asset_timestamp < datetime.datetime.now() - datetime.timedelta(
+                    hours=12
+                ):
+                    raise Exception(
+                        "Order failed without using quota: Assets are not yet available for recent data. Please try again later."
+                    )
 
             raise Exception from e

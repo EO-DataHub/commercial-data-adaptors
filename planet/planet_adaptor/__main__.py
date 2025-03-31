@@ -307,7 +307,9 @@ def main(
 ) -> None:
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
-    logging.info(f"Preparing {product_bundle_category} data for {workspace} for the following: {catalogue_dirs}")
+    logging.info(
+        f"Preparing {product_bundle_category} data for {workspace} for the following: {catalogue_dirs}"
+    )
     stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
 
     for stac_item in stac_items:
