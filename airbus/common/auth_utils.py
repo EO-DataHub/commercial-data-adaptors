@@ -97,6 +97,34 @@ def get_airbus_api_key(workspace: str) -> str:
     return plaintext_api_key
 
 
+def get_airbus_contracts(workspace: str) -> str:
+    """
+    Retrieve the contracts for Airbus from K8s secret.
+
+    """
+
+    provider = "airbus"
+
+    # Initialize Kubernetes API client
+    config.load_incluster_config()
+    v1 = client.CoreV1Api()
+    namespace = f"ws-{workspace}"
+
+    # Retrieve the OTP key from Kubernetes Secrets
+    logging.info("Fetching Contract IDs from Kubernetes...")
+    secret_data = v1.read_namespaced_secret(f"otp-{provider}", namespace)
+    contracts_b64 = secret_data.data.get("contracts") 
+
+    if not contracts_b64:
+        raise ValueError(f"Contracts not found in Kubernetes Secret in namespace {namespace}.")
+
+    contracts = json.loads(base64.b64decode(contracts_b64).decode('utf-8')) 
+
+    logging.info(f"Successfully fetched Contracts for {provider}")
+
+    return contracts
+
+
 def generate_access_token(workspace: str, env: str = "prod") -> str:
     """Generate an access token for the Airbus OneAtlas API"""
 
