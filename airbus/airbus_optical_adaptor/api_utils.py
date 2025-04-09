@@ -133,12 +133,11 @@ def get_contract_id(workspace, collection_id):
 
     if collection_id == 'airbus_pneo_data':
         for key, value in contracts.items():
-            if value == 'EODH_NCEO_PNEO_PPO':
+            if 'PNEO' in value:
                 return key
 
     elif collection_id in ('airbus_phr_data', 'airbus_spot_data'):
         for key, value in contracts.items():
-            if value == 'NCEO_LEGACY_PPO':
+            if 'LEGACY' in value:
                 return key
-
     return None
