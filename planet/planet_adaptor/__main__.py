@@ -11,17 +11,26 @@ from typing import List
 
 import boto3
 import pulsar
-from planet_adaptor.api_utils import (create_order_request, define_delivery,
-                                      get_aws_api_key_from_secret,
-                                      get_planet_api_key, submit_order)
-from planet_adaptor.s3_utils import (download_and_store_locally,
-                                     poll_s3_for_data, retrieve_stac_item)
-from planet_adaptor.stac_utils import (current_time_iso8601,
-                                       get_item_hrefs_from_catalogue,
-                                       get_key_from_stac,
-                                       update_stac_order_status,
-                                       verify_coordinates,
-                                       write_stac_item_and_catalog)
+from planet_adaptor.api_utils import (
+    create_order_request,
+    define_delivery,
+    get_aws_api_key_from_secret,
+    get_planet_api_key,
+    submit_order,
+)
+from planet_adaptor.s3_utils import (
+    download_and_store_locally,
+    poll_s3_for_data,
+    retrieve_stac_item,
+)
+from planet_adaptor.stac_utils import (
+    current_time_iso8601,
+    get_item_hrefs_from_catalogue,
+    get_key_from_stac,
+    update_stac_order_status,
+    verify_coordinates,
+    write_stac_item_and_catalog,
+)
 
 import planet
 
