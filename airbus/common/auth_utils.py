@@ -7,8 +7,8 @@ import boto3
 import requests
 from kubernetes import client, config
 
-
 CLUSTER_PREFIX = os.getenv("CLUSTER_PREFIX", "eodhp")
+
 
 def decrypt_airbus_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
     """
@@ -117,12 +117,14 @@ def get_airbus_contracts(workspace: str) -> str:
     # Retrieve the OTP key from Kubernetes Secrets
     logging.info("Fetching Contract IDs from Kubernetes...")
     secret_data = v1.read_namespaced_secret(f"otp-{provider}", namespace)
-    contracts_b64 = secret_data.data.get("contracts") 
+    contracts_b64 = secret_data.data.get("contracts")
 
     if not contracts_b64:
-        raise ValueError(f"Contracts not found in Kubernetes Secret in namespace {namespace}.")
+        raise ValueError(
+            f"Contracts not found in Kubernetes Secret in namespace {namespace}."
+        )
 
-    contracts = json.loads(base64.b64decode(contracts_b64).decode('utf-8')) 
+    contracts = json.loads(base64.b64decode(contracts_b64).decode("utf-8"))
 
     logging.info(f"Successfully fetched Contracts for {provider}")
 

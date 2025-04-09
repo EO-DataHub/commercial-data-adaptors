@@ -6,16 +6,11 @@ from typing import Dict, List, Optional
 
 from airbus_optical_adaptor.api_utils import post_submit_order
 from common.s3_utils import download_and_store_locally, poll_s3_for_data
-from common.stac_utils import (
-    OrderStatus,
-    get_item_hrefs_from_catalogue,
-    get_key_from_stac,
-    retrieve_stac_item,
-    update_stac_item_failure,
-    update_stac_item_ordered,
-    update_stac_item_success,
-    verify_coordinates,
-)
+from common.stac_utils import (OrderStatus, get_item_hrefs_from_catalogue,
+                               get_key_from_stac, retrieve_stac_item,
+                               update_stac_item_failure,
+                               update_stac_item_ordered,
+                               update_stac_item_success, verify_coordinates)
 
 logging.basicConfig(
     level=logging.INFO,

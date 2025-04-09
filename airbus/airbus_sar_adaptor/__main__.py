@@ -4,16 +4,14 @@ import logging
 import os
 from typing import List
 
-from airbus_sar_adaptor.api_utils import is_order_in_progress, post_submit_order
+from airbus_sar_adaptor.api_utils import (is_order_in_progress,
+                                          post_submit_order)
 from common.s3_utils import download_and_store_locally, poll_s3_for_data
-from common.stac_utils import (
-    get_item_hrefs_from_catalogue,
-    get_key_from_stac,
-    retrieve_stac_item,
-    update_stac_item_failure,
-    update_stac_item_ordered,
-    update_stac_item_success,
-)
+from common.stac_utils import (get_item_hrefs_from_catalogue,
+                               get_key_from_stac, retrieve_stac_item,
+                               update_stac_item_failure,
+                               update_stac_item_ordered,
+                               update_stac_item_success)
 
 logging.basicConfig(
     level=logging.INFO,

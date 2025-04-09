@@ -12,6 +12,7 @@ import planet
 
 CLUSTER_PREFIX = os.getenv("CLUSTER_PREFIX", "eodhp")
 
+
 def decrypt_planet_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
     """
     Decrypts a ciphertext using One-Time Pad (OTP) via XOR.

@@ -1,6 +1,6 @@
 import logging
-from datetime import datetime
 import os
+from datetime import datetime
 
 import requests
 from common.auth_utils import generate_access_token, get_airbus_contracts
@@ -129,15 +129,15 @@ def post_submit_order(
 def get_contract_id(workspace, collection_id):
 
     # Get the contracts associated with the workspace
-    contracts = get_airbus_contracts(workspace).get('optical', {})
+    contracts = get_airbus_contracts(workspace).get("optical", {})
 
-    if collection_id == 'airbus_pneo_data':
+    if collection_id == "airbus_pneo_data":
         for key, value in contracts.items():
-            if 'PNEO' in value:
+            if "PNEO" in value:
                 return key
 
-    elif collection_id in ('airbus_phr_data', 'airbus_spot_data'):
+    elif collection_id in ("airbus_phr_data", "airbus_spot_data"):
         for key, value in contracts.items():
-            if 'LEGACY' in value:
+            if "LEGACY" in value:
                 return key
     return None
