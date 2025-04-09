@@ -1,5 +1,5 @@
 ## Before attempting to run please provide your API Token in the following variable. You can generate this from the Hub website: https://test.eodatahub.org.uk/workspaces/
-@apiToken=<airbus-token>    
+@apiToken=<airbus-api-token>   
 @ades=dev.eodatahub.org.uk/api/catalogue/stac/catalogs/user/catalogs
 
 @scheme = https
@@ -123,7 +123,49 @@ Content-Type: : application/json
 POST https://dev.eodatahub.org.uk/api/catalogue/stac/catalogs/commercial/catalogs/airbus/collections/airbus_spot_data/items/DS_SPOT6_202503290506099_FR1_FR1_SV1_SV1_E077N11_03251/order
 Accept: application/json
 Content-Type: application/json
-Authorization: Bearer <my-workspace-token>
+Authorization: Bearer <token>
+
+    {
+      "licence": "Standard",
+      "productBundle": "General use",
+      "endUserCountry": "GB"
+          }
+        
+
+###
+
+# @name OrderRequestLocalAirbusSpot
+POST http://localhost:8087/stac/catalogs/commercial/catalogs/airbus/collections/airbus_spot_data/items/DS_SPOT6_202503290506099_FR1_FR1_SV1_SV1_E077N11_03251/order
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer <token>
+
+    {
+      "licence": "Standard",
+      "productBundle": "General use",
+      "endUserCountry": "GB"
+          }
+
+###
+# @name OrderRequestLocalPlanet
+POST http://localhost:8087/stac/catalogs/commercial/catalogs/planet/collections/PSScene/items/20250408_075238_29_24da/order
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer <token>
+    
+    {
+      "licence": "Standard",
+      "productBundle": "General use",
+      "endUserCountry": "GB"
+          }
+
+###
+
+# @name OrderRequestDEVAirbusSpot
+POST https://dev.eodatahub.org.uk/api/catalogue/stac/catalogs/commercial/catalogs/airbus/collections/airbus_spot_data/items/DS_SPOT6_202503290506099_FR1_FR1_SV1_SV1_E077N11_03251/order
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer <token>
 
     {
       "licence": "Standard",

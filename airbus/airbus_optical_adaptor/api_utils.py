@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+import os
 
 import requests
 from common.auth_utils import generate_access_token, get_airbus_contracts
@@ -17,8 +18,6 @@ def post_submit_order(
 ) -> str:
     """Submit an order for an optical acquisition via POST request"""
     url = "https://order.api.oneatlas.airbus.com/api/v1/orders"
-
-
 
     # Get the contract ID based on the collection ID
     contract_id = get_contract_id(workspace, collection_id)

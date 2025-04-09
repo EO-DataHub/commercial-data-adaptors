@@ -15,6 +15,10 @@ $graph:
         label: Bucket within which workspace data is stored
         doc: Bucket within which workspace data is stored
         type: string
+      cluster_prefix:
+        label: cluster_prefix
+        doc: Platform prefix
+        type: string
       commercial_data_bucket:
         label: Bucket from which commercial data will be received
         doc: Bucket from which commercial data will be received
@@ -60,6 +64,7 @@ $graph:
           stac_key: stac_key
           licence: licence
           workspace: workspace
+          cluster_prefix: cluster_prefix
         out:
           - results
   # convert.sh - takes input args `--url`
@@ -68,12 +73,18 @@ $graph:
     hints:
       DockerRequirement:
         dockerPull: public.ecr.aws/eodh/airbus-sar-adaptor:0.0.7
+    requirements:
+      EnvVarRequirement:
+        envDef:
+          CLUSTER_PREFIX: $(inputs.cluster_prefix)
     baseCommand: ["python", "-m", "airbus_sar_adaptor"]
     inputs:
       workspace_bucket:
         type: string
         inputBinding:
           position: 1
+      cluster_prefix:
+        type: string
       commercial_data_bucket:
         type: string
         inputBinding:
