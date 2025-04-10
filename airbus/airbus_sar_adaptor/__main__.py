@@ -123,9 +123,10 @@ def main(
     for stac_item in stac_items:
         try:
             # Submit an order for the given STAC item
-            logging.info(f"Ordering STAC item {stac_item.acquisition_id}")
-            if is_order_in_progress(stac_item.acquisition_id, workspace):
-                reason = f"Order for {stac_item.acquisition_id} is already in progress"
+            acquisition_id = stac_item.acquisition_id.rsplit("_", 1)[0]
+            logging.info(f"Ordering STAC item {acquisition_id}")
+            if is_order_in_progress(acquisition_id, workspace):
+                reason = f"Order for {acquisition_id} is already in progress"
                 logging.error(reason)
                 update_stac_item_failure(
                     stac_item.stac_json,
@@ -137,7 +138,7 @@ def main(
                 )
                 return
             order_id = post_submit_order(
-                stac_item.acquisition_id, order_options, workspace, licence
+                acquisition_id, order_options, workspace, licence
             )
             order_id = order_id.split("_")[0]
         except Exception as e:

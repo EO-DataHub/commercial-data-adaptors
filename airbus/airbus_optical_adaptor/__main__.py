@@ -163,10 +163,11 @@ def main(
 
     for stac_item in stac_items:
         try:
+            acquisition_id = stac_item.acquisition_id.rsplit("_", 1)[0]
             # Submit an order for the given STAC item
-            logging.info(f"Ordering STAC item {stac_item.acquisition_id}")
+            logging.info(f"Ordering STAC item {acquisition_id}")
             if stac_item.order_status == OrderStatus.ORDERED.value:
-                reason = f"Order for {stac_item.acquisition_id} is already in progress"
+                reason = f"Order for {acquisition_id} is already in progress"
                 logging.error(reason)
                 # Unable to obtain the item_id again, so cannot wait for data. Fail the order.
                 update_stac_item_failure(
@@ -182,7 +183,7 @@ def main(
                 # Limit order by an AOI if provided
                 coordinates = stac_item.coordinates
             order_id, customer_reference = post_submit_order(
-                stac_item.acquisition_id,
+                acquisition_id,
                 stac_item.collection_id,
                 coordinates,
                 order_options,
@@ -219,7 +220,7 @@ def main(
             objs = poll_s3_for_data(
                 commercial_data_bucket,
                 customer_reference,
-                f"{stac_item.acquisition_id}.zip",
+                f"{acquisition_id}.zip",
             )
             for obj in objs:
                 download_and_store_locally(
