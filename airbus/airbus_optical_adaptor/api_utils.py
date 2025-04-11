@@ -57,20 +57,18 @@ def build_order_request_body(
         if len(item_uuids) > 1:
             product_type = "PleiadesNeoArchiveMulti"
             order_options["spectralProcessing"] = "full_bundle"
+        elif order_options.get("spectralProcessing") == "bundle":
+            order_options["spectralProcessing"] = "full_bundle"
     elif collection_id == "airbus_phr_data":
         product_type = "PleiadesArchiveMono"
         contract_id = "UNIVERSITY_OF_LEICESTER_Orders"
         item_uuids = None
         item_id = acquisition_id
-        if order_options.get("spectralProcessing") == "full_bundle":
-            order_options["spectralProcessing"] = "bundle"
     elif collection_id == "airbus_spot_data":
         product_type = "SPOTArchive1.5Mono"
         contract_id = "UNIVERSITY_OF_LEICESTER_Orders"
         item_uuids = None
         item_id = acquisition_id
-        if order_options.get("spectralProcessing") == "full_bundle":
-            order_options["spectralProcessing"] = "bundle"
     else:
         raise ValueError(f"Collection {collection_id} not recognised")
 

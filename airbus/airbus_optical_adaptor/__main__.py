@@ -48,7 +48,7 @@ product_bundle_map = {
         "processingLevel": "ortho",
         "pixelCoding": "12bits",
         "radiometricProcessing": "reflectance",
-        "spectralProcessing": "full_bundle",
+        "spectralProcessing": "bundle",
         "dem": "best_available",
         "projection": True,
     },
@@ -57,7 +57,7 @@ product_bundle_map = {
         "processingLevel": "primary",
         "pixelCoding": "12bits",
         "radiometricProcessing": "basic",
-        "spectralProcessing": "full_bundle",
+        "spectralProcessing": "bundle",
     },
 }
 
