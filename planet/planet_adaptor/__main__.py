@@ -1,7 +1,6 @@
 import argparse
 import asyncio
 import glob
-import hashlib
 import json
 import logging
 import mimetypes
