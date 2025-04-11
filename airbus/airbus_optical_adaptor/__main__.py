@@ -80,7 +80,7 @@ class STACItem:
             )
             or []
         )
-        self.order_status = get_key_from_stac(self.stac_json, "order.status")
+        self.order_status = get_key_from_stac(self.stac_json, "order:status")
         self.item_uuid = get_key_from_stac(self.stac_json, "properties.id")
         self.item_uuids = []
 
