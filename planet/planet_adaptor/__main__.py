@@ -317,7 +317,7 @@ def main(
             )
 
         item_id = stac_item.item_id.rsplit("_", 1)[0]
-        order_name = f"{item_id}-{workspace}"
+        order_name = f"{stac_item.item_id}-{workspace}"
 
         logging.info(f"Coordinates: {coordinates}")
         if not verify_coordinates(coordinates):
