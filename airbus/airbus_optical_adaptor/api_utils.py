@@ -56,8 +56,6 @@ def build_order_request_body(
     if not contract_id:
         raise ValueError(f"No contract ID found for collection {collection_id}")
 
-    spectral_processing = "bundle"
-
     if collection_id == "airbus_pneo_data":
         product_type = "PleiadesNeoArchiveMono"
         item_uuids = item_uuids
