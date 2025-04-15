@@ -29,7 +29,7 @@ class STACItem:
         self.file_path = stac_item_path
         self.file_name = os.path.basename(stac_item_path)
         self.stac_json = retrieve_stac_item(stac_item_path)
-        self.acquisition_id = get_key_from_stac(self.stac_json, "id")
+        self.acquisition_id = get_key_from_stac(self.stac_json, "id").rsplit("_", 1)[0]
         self.collection_id = get_key_from_stac(self.stac_json, "collection")
         self.order_status = get_key_from_stac(self.stac_json, "order:status")
 
@@ -123,7 +123,7 @@ def main(
     for stac_item in stac_items:
         try:
             # Submit an order for the given STAC item
-            acquisition_id = stac_item.acquisition_id.rsplit("_", 1)[0]
+            acquisition_id = stac_item.acquisition_id
             logging.info(f"Ordering STAC item {acquisition_id}")
             if is_order_in_progress(acquisition_id, workspace):
                 reason = f"Order for {acquisition_id} is already in progress"
@@ -157,7 +157,7 @@ def main(
         update_stac_item_ordered(
             stac_item.stac_json,
             stac_item.collection_id,
-            stac_item.acquisition_id,
+            stac_item.file_name,
             order_id,
             workspace_bucket,
             pulsar_url,

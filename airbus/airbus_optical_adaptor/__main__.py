@@ -163,7 +163,7 @@ def main(
 
     for stac_item in stac_items:
         try:
-            acquisition_id = stac_item.acquisition_id.rsplit("_", 1)[0]
+            acquisition_id = stac_item.acquisition_id
             # Submit an order for the given STAC item
             logging.info(f"Ordering STAC item {acquisition_id}")
             if stac_item.order_status == OrderStatus.ORDERED.value:
@@ -208,7 +208,7 @@ def main(
         update_stac_item_ordered(
             stac_item.stac_json,
             stac_item.collection_id,
-            stac_item.acquisition_id,
+            stac_item.file_name,
             order_id,
             workspace_bucket,
             pulsar_url,
