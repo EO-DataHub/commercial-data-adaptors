@@ -184,9 +184,7 @@ def ingest_stac_item(
     s3_client = boto3.client("s3")
     parent_catalog_name = "commercial-data"
 
-    item_key = (
-        f"{workspace}/{parent_catalog_name}/airbus/{collection_id}/{file_name}"
-    )
+    item_key = f"{workspace}/{parent_catalog_name}/airbus/{collection_id}/{file_name}"
     s3_client.put_object(Body=json.dumps(stac_item), Bucket=s3_bucket, Key=item_key)
 
     logging.info(
