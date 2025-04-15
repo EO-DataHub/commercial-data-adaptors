@@ -78,7 +78,6 @@ product_bundle_map = {
 }
 
 
-
 def get_asset_details(file_path: str) -> tuple:
     """
     Returns a tuple (name, description) if a match is found, otherwise (file_base_name, "").
