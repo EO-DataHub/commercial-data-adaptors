@@ -125,9 +125,9 @@ def post_submit_order(
     return body.get("salesOrderId"), customer_reference
 
 
-def get_contract_id(workspace, collection_id):
+def get_contract_id(workspace: str, collection_id: str) -> str:
+    """Get the contract ID based on the workspace and collection ID"""
 
-    # Get the contracts associated with the workspace
     contracts = get_airbus_contracts(workspace).get("optical", {})
 
     if collection_id == "airbus_pneo_data":
