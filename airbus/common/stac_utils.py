@@ -2,9 +2,9 @@ import json
 import logging
 import mimetypes
 import os
+import re
 from datetime import datetime, timezone
 from enum import Enum
-import re
 from typing import List, Union
 
 import boto3

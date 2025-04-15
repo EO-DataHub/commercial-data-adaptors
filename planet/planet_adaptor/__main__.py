@@ -6,8 +6,8 @@ import json
 import logging
 import mimetypes
 import os
-from enum import Enum
 import re
+from enum import Enum
 from typing import List
 
 import boto3
