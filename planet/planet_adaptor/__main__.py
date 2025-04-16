@@ -77,20 +77,20 @@ product_bundle_map = {
     },
 }
 
-
-def get_asset_details(file_path: str) -> tuple:
-    """
-    Returns a tuple (name, description) if a match is found, otherwise (file_base_name, "").
-    """
-    patterns = [
+regex_patterns = [
         (r"\/manifest\.json$", "manifest", "Manifest file"),
         (r"\/[^\\:?\"<>|]+_metadata\.json$", "metadata", "Metadata file"),
         (r"\/[^\\:?\"<>|]+_udm\d?+[^\\:?\"<>|]+\.tif$", "udm", "Usable data mask"),
         (r"\/[^\\:?\"<>|]+\.tif$", "primaryAsset", "GeoTIFF image file"),
     ]
 
+
+def get_asset_details(file_path: str) -> tuple:
+    """
+    Returns a tuple (name, description) if a match is found, otherwise (file_base_name, "").
+    """
     # Test the file path against each regex
-    for pattern, name, description in patterns:
+    for pattern, name, description in regex_patterns:
         if re.search(pattern, file_path.lower()):
             return name, description
 
