@@ -462,10 +462,9 @@ def update_stac_item_success(
             asset_name, description = get_asset_details(asset_path, collection_id)
 
             # Append row and column indexes to the asset name if they exist
-            match = re.search(r"_R\d+C\d+\.", asset_path.upper())
+            match = re.search(r"(_R\d+C\d+)\.", asset_path.upper())
             if match:
-                # Remove trailing dot originating from the extension
-                asset_name = asset_name + match.group(0)[:-1]
+                asset_name = asset_name + match.group(1)
 
             # Cannot have duplicate asset names
             if asset_name in name_counter:
