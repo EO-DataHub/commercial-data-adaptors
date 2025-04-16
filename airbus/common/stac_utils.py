@@ -324,16 +324,14 @@ def ingest_stac_item(
     pulsar_url: str,
     workspace: str,
     collection_id: str,
-    item_id: str,
+    file_name: str,
 ):
     """Ingest the STAC item to the S3 bucket and send a Pulsar message"""
     # Upload the STAC item to S3
     s3_client = boto3.client("s3")
     parent_catalog_name = "commercial-data"
 
-    item_key = (
-        f"{workspace}/{parent_catalog_name}/airbus/{collection_id}/{item_id}.json"
-    )
+    item_key = f"{workspace}/{parent_catalog_name}/airbus/{collection_id}/{file_name}"
     s3_client.put_object(Body=json.dumps(stac_item), Bucket=s3_bucket, Key=item_key)
 
     logging.info(
@@ -342,7 +340,7 @@ def ingest_stac_item(
 
     transformed_item_key = (
         f"transformed/catalogs/user/catalogs/{workspace}/catalogs/{parent_catalog_name}/catalogs/"
-        f"airbus/collections/{collection_id}/items/{item_id}.json"
+        f"airbus/collections/{collection_id}/items/{file_name}"
     )
     s3_client.put_object(
         Body=json.dumps(stac_item), Bucket=s3_bucket, Key=transformed_item_key
@@ -355,7 +353,7 @@ def ingest_stac_item(
     # Send a Pulsar message
     pulsar_client = pulsar.Client(pulsar_url)
     producer = pulsar_client.create_producer(
-        topic="transformed", producer_name=f"data_adaptor-{workspace}-{item_id}"
+        topic="transformed", producer_name=f"data_adaptor-{workspace}-{file_name}"
     )
     output_data = {
         "id": f"{workspace}/update_order",
@@ -419,7 +417,7 @@ def update_stac_item_failure(
 def update_stac_item_ordered(
     stac_item: dict,
     collection_id: str,
-    item_id: str,
+    file_name: str,
     order_id: str,
     s3_bucket: str,
     pulsar_url: str,
@@ -438,7 +436,7 @@ def update_stac_item_ordered(
     # Ingest the updated STAC item to the catalog
     try:
         ingest_stac_item(
-            stac_item, s3_bucket, pulsar_url, workspace, collection_id, item_id
+            stac_item, s3_bucket, pulsar_url, workspace, collection_id, file_name
         )
     except Exception as e:
         logging.error(f"Failed to ingest STAC item: {e}", exc_info=True)

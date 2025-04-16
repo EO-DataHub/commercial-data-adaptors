@@ -77,7 +77,7 @@ $graph:
     id: airbus-optical-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/airbus-optical-adaptor:eodhp-1243-rc6
+        dockerPull: public.ecr.aws/eodh/airbus-optical-adaptor:0.0.6
     requirements:
       EnvVarRequirement:
         envDef:

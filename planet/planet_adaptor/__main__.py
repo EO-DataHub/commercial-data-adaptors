@@ -1,7 +1,6 @@
 import argparse
 import asyncio
 import glob
-import hashlib
 import json
 import logging
 import mimetypes
@@ -50,13 +49,6 @@ class OrderStatus(Enum):
     SUCCEEDED = "succeeded"
     CANCELED = "canceled"
     FAILED = "failed"
-
-
-class ProductBundleCode(Enum):
-    V = "Visual"
-    G = "General use"
-    A = "Analytic"
-    B = "Basic"
 
 
 product_bundle_map = {
@@ -324,11 +316,6 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
     return stac_items
 
 
-def hash_aoi(coordinates):
-    """Converts coordinates to a hash value for a unique item identifier for each AOI"""
-    return str(hashlib.md5(str(coordinates).encode("utf-8")).hexdigest())
-
-
 def main(
     workspace: str,
     workspace_bucket: str,
@@ -362,11 +349,8 @@ def main(
                 f"{product_bundle_map[collection_id].keys()} for {collection_id}"
             )
 
-        if coordinates:
-            order_name = f"{stac_item.item_id}-{workspace}-{ProductBundleCode(product_bundle_category).name}-{hash_aoi(coordinates)}"
-        else:
-            coordinates = stac_item.coordinates
-            order_name = f"{stac_item.item_id}-{workspace}-{ProductBundleCode(product_bundle_category).name}"
+        item_id = stac_item.item_id.rsplit("_", 1)[0]
+        order_name = f"{stac_item.item_id}-{workspace}"
 
         logging.info(f"Coordinates: {coordinates}")
         if not verify_coordinates(coordinates):
@@ -376,7 +360,7 @@ def main(
 
         try:
             # Submit an order for the given STAC item
-            logging.info(f"Ordering stac item {stac_item.item_id} in {collection_id}")
+            logging.info(f"Ordering stac item {item_id} in {collection_id}")
 
             order = asyncio.run(get_existing_order_details(workspace, order_name))
             logging.info(f"Existing order: {order}")
@@ -385,7 +369,7 @@ def main(
             logging.info(f"Order status: {order_status}")
             if order_status in ["queued", "running"]:
                 submitted_order_id = order.get("id")
-                reason = f"Order for {stac_item.item_id} has already been submitted: {submitted_order_id}"
+                reason = f"Order for {item_id} has already been submitted: {submitted_order_id}"
                 logging.info(reason)
                 update_stac_item_failure(
                     stac_item.stac_json,
@@ -406,7 +390,7 @@ def main(
                 )
                 order_request = create_order_request(
                     order_name,
-                    stac_item.item_id,
+                    item_id,
                     collection_id,
                     delivery_request,
                     product_bundle,
