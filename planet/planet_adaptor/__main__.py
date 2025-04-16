@@ -78,11 +78,11 @@ product_bundle_map = {
 }
 
 regex_patterns = [
-        (r"\/manifest\.json$", "manifest", "Manifest file"),
-        (r"\/[^\\:?\"<>|]+_metadata\.json$", "metadata", "Metadata file"),
-        (r"\/[^\\:?\"<>|]+_udm\d?+[^\\:?\"<>|]+\.tif$", "udm", "Usable data mask"),
-        (r"\/[^\\:?\"<>|]+\.tif$", "primaryAsset", "GeoTIFF image file"),
-    ]
+    (r"\/manifest\.json$", "manifest", "Manifest file"),
+    (r"\/[^\\:?\"<>|]+_metadata\.json$", "metadata", "Metadata file"),
+    (r"\/[^\\:?\"<>|]+_udm\d?+[^\\:?\"<>|]+\.tif$", "udm", "Usable data mask"),
+    (r"\/[^\\:?\"<>|]+\.tif$", "primaryAsset", "GeoTIFF image file"),
+]
 
 
 def get_asset_details(file_path: str) -> tuple:
