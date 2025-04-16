@@ -15,6 +15,10 @@ $graph:
         label: Workspace name
         doc: Name of workspace
         type: string
+      cluster_prefix:
+        label: cluster_prefix
+        doc: Platform prefix
+        type: string
       workspace_bucket:
         label: Bucket within which workspace data is stored
         doc: Bucket within which workspace data is stored
@@ -65,6 +69,7 @@ $graph:
           stac_key: stac_key
           end_users: end_users
           licence: licence
+          cluster_prefix: cluster_prefix
         out:
           - results
   # convert.sh - takes input args `--url`
@@ -72,13 +77,19 @@ $graph:
     id: airbus-optical-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/airbus-optical-adaptor:0.0.4
+        dockerPull: public.ecr.aws/eodh/airbus-optical-adaptor:eodhp-1243-rc6
+    requirements:
+      EnvVarRequirement:
+        envDef:
+          CLUSTER_PREFIX: $(inputs.cluster_prefix)
     baseCommand: ["python", "-m", "airbus_optical_adaptor"]
     inputs:
       workspace:
         type: string
         inputBinding:
           position: 1
+      cluster_prefix:
+        type: string
       workspace_bucket:
         type: string
         inputBinding:

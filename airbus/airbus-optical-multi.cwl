@@ -15,6 +15,10 @@ $graph:
         label: bucket from which commercial data will be received
         doc: bucket from which commercial data will be received
         type: string
+      cluster_prefix:
+        label: cluster_prefix
+        doc: Platform prefix
+        type: string
       product_bundle:
         label: Reference to a group of settings describing parameters for an order
         doc: Reference to a group of settings describing parameters for an order
@@ -45,6 +49,7 @@ $graph:
           coordinates: coordinates
           stac_keys: stac_keys
           workspace: workspace
+          cluster_prefix: cluster_prefix
         out:
           - results
   # convert.sh - takes input args `--url`
@@ -53,12 +58,18 @@ $graph:
     hints:
       DockerRequirement:
         dockerPull: public.ecr.aws/eodh/airbus-optical-adaptor:0.0.3-rc2
+    requirements:
+      EnvVarRequirement:
+        envDef:
+          CLUSTER_PREFIX: $(inputs.cluster_prefix)
     baseCommand: ["python", "-m", "airbus_optical_adaptor"]
     inputs:
       commercial_data_bucket:
         type: string
         inputBinding:
           position: 1
+      cluster_prefix:
+        type: string
       product_bundle:
         type: string
         inputBinding:

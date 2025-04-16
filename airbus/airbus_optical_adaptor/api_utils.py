@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 
 import requests
-from common.auth_utils import generate_access_token
+from common.auth_utils import generate_access_token, get_airbus_contracts
 
 
 def get_projection(
@@ -49,9 +49,15 @@ def build_order_request_body(
 ) -> dict:
     """Get the body of the POST request to submit an order"""
 
+    # Get the contract ID based on the collection ID
+    contract_id = get_contract_id(workspace, collection_id)
+
+    logging.info(f"Contract ID: {contract_id}")
+    if not contract_id:
+        raise ValueError(f"No contract ID found for collection {collection_id}")
+
     if collection_id == "airbus_pneo_data":
         product_type = "PleiadesNeoArchiveMono"
-        contract_id = "CTR24005241"
         item_uuids = item_uuids
         item_id = None
         if len(item_uuids) > 1:
@@ -61,12 +67,10 @@ def build_order_request_body(
             order_options["spectralProcessing"] = "full_bundle"
     elif collection_id == "airbus_phr_data":
         product_type = "PleiadesArchiveMono"
-        contract_id = "UNIVERSITY_OF_LEICESTER_Orders"
         item_uuids = None
         item_id = acquisition_id
     elif collection_id == "airbus_spot_data":
         product_type = "SPOTArchive1.5Mono"
-        contract_id = "UNIVERSITY_OF_LEICESTER_Orders"
         item_uuids = None
         item_id = acquisition_id
     else:
@@ -195,3 +199,20 @@ def post_submit_order(
     body = response.json()
     logging.info(f"Order submitted: {body}")
     return body.get("salesOrderId"), customer_reference
+
+
+def get_contract_id(workspace: str, collection_id: str) -> str:
+    """Get the contract ID based on the workspace and collection ID"""
+
+    contracts = get_airbus_contracts(workspace).get("optical", {})
+
+    if collection_id == "airbus_pneo_data":
+        for key, value in contracts.items():
+            if "PNEO" in value:
+                return key
+
+    elif collection_id in ("airbus_phr_data", "airbus_spot_data"):
+        for key, value in contracts.items():
+            if "LEGACY" in value:
+                return key
+    return None

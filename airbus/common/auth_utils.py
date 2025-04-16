@@ -1,10 +1,13 @@
 import base64
 import json
 import logging
+import os
 
 import boto3
 import requests
 from kubernetes import client, config
+
+CLUSTER_PREFIX = os.getenv("CLUSTER_PREFIX", "eodhp")
 
 
 def decrypt_airbus_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
@@ -60,6 +63,7 @@ def get_airbus_api_key(workspace: str) -> str:
     config.load_incluster_config()
     v1 = client.CoreV1Api()
     namespace = f"ws-{workspace}"
+    secretId = f"{namespace}-{CLUSTER_PREFIX}"
 
     # Retrieve the OTP key from Kubernetes Secrets
     logging.info("Fetching OTP key from Kubernetes...")
@@ -76,7 +80,7 @@ def get_airbus_api_key(workspace: str) -> str:
         f"Fetching ciphertext for provider '{provider}' from AWS Secrets Manager..."
     )
     secrets_client = boto3.client("secretsmanager")
-    response = secrets_client.get_secret_value(SecretId=namespace)
+    response = secrets_client.get_secret_value(SecretId=secretId)
 
     # Extract the secret string and parse it as JSON
     secret_string = response.get("SecretString", "{}")
@@ -95,6 +99,36 @@ def get_airbus_api_key(workspace: str) -> str:
     logging.info(f"Successfully fetched API key for {provider}")
 
     return plaintext_api_key
+
+
+def get_airbus_contracts(workspace: str) -> str:
+    """
+    Retrieve the contracts for Airbus from K8s secret.
+
+    """
+
+    provider = "airbus"
+
+    # Initialize Kubernetes API client
+    config.load_incluster_config()
+    v1 = client.CoreV1Api()
+    namespace = f"ws-{workspace}"
+
+    # Retrieve the OTP key from Kubernetes Secrets
+    logging.info("Fetching Contract IDs from Kubernetes...")
+    secret_data = v1.read_namespaced_secret(f"otp-{provider}", namespace)
+    contracts_b64 = secret_data.data.get("contracts")
+
+    if not contracts_b64:
+        raise ValueError(
+            f"Contracts not found in Kubernetes Secret in namespace {namespace}."
+        )
+
+    contracts = json.loads(base64.b64decode(contracts_b64).decode("utf-8"))
+
+    logging.info(f"Successfully fetched Contracts for {provider}")
+
+    return contracts
 
 
 def generate_access_token(workspace: str, env: str = "prod") -> str:
