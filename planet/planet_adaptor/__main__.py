@@ -6,6 +6,7 @@ import json
 import logging
 import mimetypes
 import os
+import re
 from enum import Enum
 from typing import List
 
@@ -76,6 +77,26 @@ product_bundle_map = {
     },
 }
 
+regex_patterns = [
+    (r"\/manifest\.json$", "manifest", "Manifest file"),
+    (r"\/[^\\:?\"<>|]+_metadata\.json$", "metadata", "Metadata file"),
+    (r"\/[^\\:?\"<>|]+_udm\d?+[^\\:?\"<>|]+\.tif$", "udm", "Usable data mask"),
+    (r"\/[^\\:?\"<>|]+\.tif$", "primaryAsset", "GeoTIFF image file"),
+]
+
+
+def get_asset_details(file_path: str) -> tuple:
+    """
+    Returns a tuple (name, description) if a match is found, otherwise (file_base_name, "").
+    """
+    # Test the file path against each regex
+    for pattern, name, description in regex_patterns:
+        if re.search(pattern, file_path.lower()):
+            return name, description
+
+    # If no match is found, return file name and empty description
+    return os.path.basename(file_path), ""
+
 
 def update_stac_item_success(
     stac_item: dict,
@@ -88,10 +109,20 @@ def update_stac_item_success(
 ):
     """Update the STAC item with the assets and success order status"""
     # Add all files in the directory as assets to the STAC item
-    for root, _, files in os.walk(directory):
-        for asset in files:
+    name_counter = {}
+    for root, dirs, files in os.walk(directory):
+        dirs.sort()
+        for asset in sorted(files):
             asset_path = os.path.join(root, asset)
-            asset_name = os.path.basename(asset_path)
+            asset_name, description = get_asset_details(asset_path)
+
+            # Cannot have duplicate asset names
+            if asset_name in name_counter:
+                # Append an incrementing integer
+                name_counter[asset_name] += 1
+                asset_name = f"{asset_name}_{name_counter[asset_name]}"
+            else:
+                name_counter[asset_name] = 0
 
             # Determine the MIME type of the file
             mime_type, _ = mimetypes.guess_type(asset_path)
@@ -103,6 +134,8 @@ def update_stac_item_success(
                 "href": asset_path,
                 "type": mime_type,
             }
+            if description:
+                stac_item["assets"][asset_name]["title"] = description
     # Mark the order as succeeded and upload the updated STAC item
     update_stac_order_status(stac_item, order_name, OrderStatus.SUCCEEDED.value)
 
