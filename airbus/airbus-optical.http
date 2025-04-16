@@ -1,14 +1,15 @@
 ## Before attempting to run please provide your API Token in the following variable. You can generate this from the Hub website: https://test.eodatahub.org.uk/workspaces/
-@apiToken=<apiToken>
+@apiToken=<airbus-api-token>   
+@ades=dev.eodatahub.org.uk/api/catalogue/stac/catalogs/user/catalogs
 
 @scheme = https
-@ades=staging.eodatahub.org.uk/api/catalogue/stac/catalogs/user/catalogs
+
 @workspace = jlangstone-tpzuk
-@stacKey = s3://workspaces-eodhp-dev3/jlangstone-tpzuk/commercial-data/collections/airbus_phr_data/items/DS_PHR1A_201203021558128_FR1_PX_W080S03_0221_01728.json
+@stacKey = s3://workspaces-eodhp-dev/jlangstone-tpzuk/commercial-data/collections/airbus_phr_data/items/DS_PHR1A_201203021558128_FR1_PX_W080S03_0221_01728.json
 @commercialBucket = commercial-data-airbus
 @productBundle = general_use
 @pulsarUrl = pulsar://pulsar-broker.pulsar:6650
-@workspaceBucket = workspaces-eodhp-staging
+@workspaceBucket = workspaces-eodhp-dev
 @coordinates = [[[-8.04575859845228, 31.7018335608202], [-8.13085357903705, 31.6969488507275], [-8.1302277917, 31.6038867332], [-8.02977481420451, 31.5982362108166], [-7.95210682318346, 31.603078531553], [-7.9521185644, 31.6961852319], [-8.04575859845228, 31.7018335608202]]]
 @licence = "standard"
 

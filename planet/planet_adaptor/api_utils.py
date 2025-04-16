@@ -2,12 +2,15 @@ import base64
 import datetime
 import json
 import logging
+import os
 import re
 
 import boto3
 from kubernetes import client, config
 
 import planet
+
+CLUSTER_PREFIX = os.getenv("CLUSTER_PREFIX", "eodhp")
 
 
 def decrypt_planet_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
@@ -63,6 +66,7 @@ def get_planet_api_key(workspace: str) -> str:
     config.load_incluster_config()
     v1 = client.CoreV1Api()
     namespace = f"ws-{workspace}"
+    secretId = f"{namespace}-{CLUSTER_PREFIX}"
 
     # Retrieve the OTP key from Kubernetes Secrets
     logging.info("Fetching OTP key from Kubernetes...")
@@ -79,7 +83,7 @@ def get_planet_api_key(workspace: str) -> str:
         f"Fetching ciphertext for provider '{provider}' from AWS Secrets Manager..."
     )
     secrets_client = boto3.client("secretsmanager")
-    response = secrets_client.get_secret_value(SecretId=namespace)
+    response = secrets_client.get_secret_value(SecretId=secretId)
 
     # Extract the secret string and parse it as JSON
     secret_string = response.get("SecretString", "{}")

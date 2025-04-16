@@ -15,6 +15,10 @@ $graph:
         label: Workspace name
         doc: Name of workspace
         type: string
+      cluster_prefix:
+        label: cluster_prefix
+        doc: Platform prefix
+        type: string
       workspace_bucket:
         label: Bucket within which workspace data is stored
         doc: Bucket within which workspace data is stored
@@ -55,6 +59,7 @@ $graph:
           product_bundle: product_bundle
           coordinates: coordinates
           stac_key: stac_key
+          cluster_prefix: cluster_prefix
         out:
           - results
   # convert.sh - takes input args `--url`
@@ -62,13 +67,19 @@ $graph:
     id: planet-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/planet-adaptor:0.1.5
+        dockerPull: public.ecr.aws/eodh/planet-adaptor:0.1.6
+    requirements:
+      EnvVarRequirement:
+        envDef:
+          CLUSTER_PREFIX: $(inputs.cluster_prefix)
     baseCommand: ["python", "-m", "planet_adaptor"]
     inputs:
       workspace:
         type: string
         inputBinding:
           position: 1
+      cluster_prefix:
+        type: string
       workspace_bucket:
         type: string
         inputBinding:

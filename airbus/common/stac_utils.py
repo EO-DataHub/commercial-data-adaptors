@@ -2,6 +2,7 @@ import json
 import logging
 import mimetypes
 import os
+import re
 from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Union
@@ -10,6 +11,152 @@ import boto3
 import pulsar
 
 Coordinate = Union[List[float], tuple[float, float]]
+
+
+REGEX_PATTERNS = {
+    "airbus_sar_data": [
+        # Imagery
+        (
+            r"imagedata\/[^\\:?\"<>|]+\.(cos|tif|tiff)$",
+            "primaryAsset",
+            "GeoTIFF image file",
+        ),
+        (
+            r"imagedata\/[^\\:?\"<>|]+\.(cos)$",
+            "primaryAsset",
+            "COSAR binary image file",
+        ),
+        (
+            r"preview\/map_plot\.png$",
+            "mapPlot",
+            "A coarse geographical map showing the footprint of the scene as a low-resolution image",
+        ),
+        (r"preview\/browse\.tif$", "thumbnail", "A thumbnail image of the scene"),
+        (
+            r"preview\/composite_ql\.tif$",
+            "quicklook",
+            "A composite quicklook image composed of all layers",
+        ),
+        (
+            r"preview\/[^\\:?\"<>|]+\.tif$",
+            "quicklookLayer",
+            "Individual quicklook layer",
+        ),
+    ],
+    "optical": [
+        # Imagery
+        (
+            r"\/img_[^\\:?\"<>|]+_r\d+c\d+\.(tif|tiff|jp2)$",
+            "primaryAsset",
+            "Full resolution image file, possibly tiled. Row (R) and Col (C) image tile indexes",
+        ),
+        (
+            r"\/img_[^\\:?\"<>|]+_r\d+c\d+\.(tfw|j2w)$",
+            "georeference",
+            "Simple assembling/georeferencing file, possibly tiled. Row (R) and Col (C) image tile indexes",
+        ),
+        (r"\/preview_[^\\:?\"<>|]+\.jpg$", "quicklook", "Quicklook raster file"),
+        (r"\/preview_[^\\:?\"<>|]+\.kmz$", "quicklookKMZ", "Quicklook KMZ file"),
+        (r"\/icon_[^\\:?\"<>|]+\.jpg$", "thumbnail", "Thumbnail raster file"),
+        # Metadata
+        (r"\/dim_[^\\:?\"<>|]+\.xml$", "DIMAP", "Main product metadata file"),
+        (r"\/iso_[^\\:?\"<>|]+\.xml$", "ISO", "ISO 19115/19139 metadata file"),
+        (
+            r"\/lut_[^\\:?\"<>|]+\.xml$",
+            "LUT",
+            "DIMAP, LUT colour curves metadata file",
+        ),
+        (r"\/rpc_[^\\:?\"<>|]+\.xml$", "RPC", "DIMAP, RPC metadata file"),
+        (
+            r"\/ground_[^\\:?\"<>|]+\.xml$",
+            "GROUND",
+            "DIMAP, Ground Source metadata file",
+        ),
+        (
+            r"\/height_[^\\:?\"<>|]+\.xml$",
+            "HEIGHT",
+            "DIMAP, Height Source metadata file",
+        ),
+        (
+            r"\/processing_[^\\:?\"<>|]+\.xml$",
+            "PROCESSING",
+            "DIMAP, Processing lineage file",
+        ),
+        (
+            r"\/gipp_[^\\:?\"<>|]+\.xml$",
+            "GIPP",
+            "Ground Image Processing Parameters file",
+        ),
+        (
+            r"\/strip_[^\\:?\"<>|]+\.xml$",
+            "STRIP",
+            "DIMAP, Data Strip Source metadata file",
+        ),
+        # Masks
+        (
+            r"\/masks\/roi_[^\\:?\"<>|]+\.gml$",
+            "ROIMask",
+            "GML, Region of interest vector mask",
+        ),
+        (r"\/masks\/cld_[^\\:?\"<>|]+\.gml$", "CLDMask", "GML, Cloud vector mask"),
+        (
+            r"\/masks\/qte_[^\\:?\"<>|]+\.gml$",
+            "QTEMask",
+            "GML, Synthetic technical quality vector mask",
+        ),
+        (r"\/masks\/snw_[^\\:?\"<>|]+\.gml$", "SNWMask", "GML, Snow vector mask"),
+        (
+            r"\/masks\/det_[^\\:?\"<>|]+\.gml$",
+            "DETMask",
+            "GML, Out of order detectors vector mask",
+        ),
+        (
+            r"\/masks\/vis_[^\\:?\"<>|]+\.gml$",
+            "VISMask",
+            "GML, Hidden area vector mask",
+        ),
+        (
+            r"\/masks\/slt_[^\\:?\"<>|]+\.gml$",
+            "SLTMask",
+            "GML, Straylight vector mask",
+        ),
+        (
+            r"\/masks\/dtm_[^\\:?\"<>|]+\.gml$",
+            "DTMMask",
+            "GML, DTM quality vector mask",
+        ),
+        (
+            r"\/masks\/wat_[^\\:?\"<>|]+\.gml$",
+            "WATMask",
+            "GML, Water areas vector mask",
+        ),
+        (
+            r"\/masks\/cut_[^\\:?\"<>|]+\.shp$",
+            "CUTMask",
+            "Shapefile, cutline vector mask",
+        ),
+        (
+            r"\/masks\/ppm_[^\\:?\"<>|]+\.$",
+            "PPMMask",
+            "Planimetric accuracy Performance assessment Mask, raster",
+        ),
+        # Miscellaneous
+        (
+            r"\/vol_[^\\:?\"<>|]+\.xml$",
+            "indexVolume",
+            "Index volume file of products contained in the delivery",
+        ),
+        (r"\/delivery\.pdf$", "delivery", "Delivery note"),
+        (r"\/license\.pdf$", "license", "License file"),
+        (r"\/index\.htm$", "index", "Index file"),
+        (r"logo\.jpg$", "logo", "Logo file"),
+        (
+            r"style\.xsl$",
+            "styleSheet",
+            "Short metadata content for discovering purpose",
+        ),
+    ],
+}
 
 
 class OrderStatus(Enum):
@@ -225,6 +372,22 @@ def ingest_stac_item(
     pulsar_client.close()
 
 
+def get_asset_details(file_path: str, collection_id: str) -> tuple[str, str]:
+    """
+    Returns a tuple (name, description) if a match is found, otherwise (file_base_name, "").
+    """
+    # Select the appropriate regex list based on collection_id
+    patterns = REGEX_PATTERNS.get(collection_id, REGEX_PATTERNS["optical"])
+
+    # Test the file path against each regex
+    for pattern, name, description in patterns:
+        if re.search(pattern, file_path.lower()):
+            return name, description
+
+    # If no match is found, return file name and empty description
+    return os.path.basename(file_path), ""
+
+
 def update_stac_item_failure(
     stac_item: dict,
     file_name: str,
@@ -290,10 +453,25 @@ def update_stac_item_success(
 ):
     """Update the STAC item with the assets and success order status"""
     # Add all files in the directory as assets to the STAC item
-    for root, _, files in os.walk(directory):
-        for asset in files:
+    name_counter = {}
+    for root, dirs, files in os.walk(directory):
+        dirs.sort()
+        for asset in sorted(files):
             asset_path = os.path.join(root, asset)
-            asset_name = os.path.basename(asset_path)
+            asset_name, description = get_asset_details(asset_path, collection_id)
+
+            # Append row and column indexes to the asset name if they exist
+            match = re.search(r"(_R\d+C\d+)\.", asset_path.upper())
+            if match:
+                asset_name = asset_name + match.group(1)
+
+            # Cannot have duplicate asset names
+            if asset_name in name_counter:
+                # Append an incrementing integer
+                name_counter[asset_name] += 1
+                asset_name = f"{asset_name}_{name_counter[asset_name]}"
+            else:
+                name_counter[asset_name] = 0
 
             # Determine the MIME type of the file
             mime_type, _ = mimetypes.guess_type(asset_path)
@@ -305,6 +483,8 @@ def update_stac_item_success(
                 "href": asset_path,
                 "type": mime_type,
             }
+            if description:
+                stac_item["assets"][asset_name]["title"] = description
     # Mark the order as succeeded and upload the updated STAC item
     update_stac_order_status(stac_item, order_id, OrderStatus.SUCCEEDED.value)
 
