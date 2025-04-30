@@ -171,7 +171,7 @@ def main(
                 download_and_store_locally(
                     commercial_data_bucket,
                     obj,
-                    "assets",
+                    order_id,
                 )
         except Exception as e:
             reason = f"Failed to retrieve data: {e}"
@@ -191,7 +191,7 @@ def main(
             stac_item.file_name,
             stac_item.collection_id,
             order_id,
-            "assets",
+            order_id,
             workspace,
             workspace_bucket,
         )
