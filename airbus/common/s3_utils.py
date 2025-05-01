@@ -91,11 +91,15 @@ def download_and_store_locally(source_bucket: str, obj: dict, destination_folder
         with tarfile.open(local_archive_path, "r:gz") as tar:
             tar.extractall(path=destination_folder)
             logging.info(f"Extracted '{local_archive_path}' to '{destination_folder}'.")
+        os.remove(local_archive_path)
+        logging.info(f"Deleted archive '{local_archive_path}'.")
     elif local_archive_path.endswith(".zip"):
         # Extract the contents of the .zip file into the destination folder
         with zipfile.ZipFile(local_archive_path, "r") as zip_ref:
             zip_ref.extractall(destination_folder)
             logging.info(f"Extracted '{local_archive_path}' to '{destination_folder}'.")
+        os.remove(local_archive_path)
+        logging.info(f"Deleted archive '{local_archive_path}'.")
     else:
         logging.warning(
             f"Unsupported file format for '{local_archive_path}'. Skipping extraction."
