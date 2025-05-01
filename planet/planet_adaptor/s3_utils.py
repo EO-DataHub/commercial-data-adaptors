@@ -52,7 +52,7 @@ def poll_s3_for_data(
 def download_and_store_locally(
     source_bucket: str, parent_folder: str, destination_folder: str
 ):
-    """Unzip the contents of a .zip file from S3 and store them locally in a specified folder"""
+    """Download and store order files from an S3 bucket to a local folder"""
     # Create the destination folder if it doesn't exist
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
@@ -71,12 +71,15 @@ def download_and_store_locally(
             )
 
             if obj["Key"].endswith(".zip"):
+                # Planet orders may arrive as a .zip file
                 logging.info("Zip file found. Unzipping...")
 
                 # Extract the contents of the .zip file
                 with zipfile.ZipFile(destination_file_path) as z:
                     z.extractall(path=destination_folder)
                     logging.info(f"Extracted '{obj['Key']}' to '{destination_folder}'.")
+                os.remove(destination_file_path)
+                logging.info(f"Deleted archive '{destination_file_path}'.")
 
 
 def retrieve_stac_item(file_path: str) -> dict:
