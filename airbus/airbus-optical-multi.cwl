@@ -1,3 +1,4 @@
+# NOTE: This script is experimental and not in active use. Future updates may be required.
 cwlVersion: v1.0
 $namespaces:
   s: https://schema.org/
