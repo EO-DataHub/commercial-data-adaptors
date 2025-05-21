@@ -27,7 +27,7 @@ This repository currently includes the following four adaptors, each tailored fo
 
 Each adaptor is implemented with its own CWL and HTTP scripts, providing an example of basic inputs and usage, although all adaptors are designed to be called by a service within the Hub infrastructure that will manage the backend STAC item correctly.
 
-### Building and Deploying the Adaptors
+## Building and Deploying the Adaptors
 
 Adaptors are organized into either the `planet` or `airbus` folders, depending on the data provider.
 
