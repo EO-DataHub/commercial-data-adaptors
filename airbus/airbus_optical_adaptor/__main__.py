@@ -34,7 +34,7 @@ product_bundle_map = {
         "dem": "best_available",
         "projection": True,
     },
-    "General use": {
+    "General Use": {
         "productBundle": "general",
         "processingLevel": "ortho",
         "pixelCoding": "12bits",
@@ -141,7 +141,7 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
 
 def get_order_options(product_bundle: str) -> dict:
     """Return the order options for the given product bundle"""
-    available_bundles = ["General use", "Visual", "Analytic", "Basic"]
+    available_bundles = ["General Use", "Visual", "Analytic", "Basic"]
     if product_bundle not in available_bundles:
         raise NotImplementedError(
             f"Product bundle {product_bundle} is not valid. Currently implemented bundles are {available_bundles}"
