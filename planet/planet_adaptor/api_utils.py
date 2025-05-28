@@ -165,7 +165,13 @@ def create_order_request(
             )
         ]
 
-    if product_bundle.get("allow_clip", True):
+    if not coordinates:
+        order = planet.order_request.build_request(
+            name=order_id,
+            products=products,
+            delivery=delivery,
+        )
+    elif product_bundle.get("allow_clip", True):
         order = planet.order_request.build_request(
             name=order_id,
             products=products,
