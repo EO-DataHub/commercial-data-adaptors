@@ -166,7 +166,10 @@ def main(
         try:
             # Wait for data from airbus to arrive, then move it to the workspace
             # Archive is of the format SO_<order_id>_<item_number>_1.tar.gz
-            objs = poll_s3_for_data(commercial_data_bucket, f"SO_{order_id}", ".tar.gz")
+            # Timeout extended to 7 days to accommodate for delays in confirming orders between Airbus and the user
+            objs = poll_s3_for_data(
+                commercial_data_bucket, f"SO_{order_id}", ".tar.gz", timeout=604800
+            )
             for obj in objs:
                 download_and_store_locally(
                     commercial_data_bucket,
