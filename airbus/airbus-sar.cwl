@@ -72,7 +72,7 @@ $graph:
     id: airbus-sar-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/airbus-sar-adaptor:0.0.9
+        dockerPull: public.ecr.aws/eodh/airbus-sar-adaptor:0.0.11
     requirements:
       EnvVarRequirement:
         envDef:

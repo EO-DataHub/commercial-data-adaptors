@@ -67,7 +67,7 @@ $graph:
     id: planet-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/planet-adaptor:0.1.6
+        dockerPull: public.ecr.aws/eodh/planet-adaptor:0.1.8
     requirements:
       EnvVarRequirement:
         envDef:
