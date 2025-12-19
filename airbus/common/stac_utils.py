@@ -58,6 +58,7 @@ REGEX_PATTERNS = {
         (r"\/preview_[^\\:?\"<>|]+\.jpg$", "quicklook", "Quicklook raster file"),
         (r"\/preview_[^\\:?\"<>|]+\.kmz$", "quicklookKMZ", "Quicklook KMZ file"),
         (r"\/icon_[^\\:?\"<>|]+\.jpg$", "thumbnail", "Thumbnail raster file"),
+        (r"\/cog_[^\\:?\"<>|]+\.tif$", "COG", "Cloud Optimized GeoTIFF file"),
         # Metadata
         (r"\/dim_[^\\:?\"<>|]+\.xml$", "DIMAP", "Main product metadata file"),
         (r"\/iso_[^\\:?\"<>|]+\.xml$", "ISO", "ISO 19115/19139 metadata file"),

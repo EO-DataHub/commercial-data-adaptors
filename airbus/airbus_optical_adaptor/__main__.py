@@ -5,6 +5,7 @@ import os
 from typing import Dict, List, Optional
 
 from airbus_optical_adaptor.api_utils import post_submit_order
+from common.gdal_utils import gdal_translate
 from common.s3_utils import download_and_store_locally, poll_s3_for_data
 from common.stac_utils import (
     OrderStatus,
@@ -159,7 +160,7 @@ def main(
     catalogue_dirs: List[str],
     licence: str,
     end_users: Optional[List[Dict[str, str]]] = None,
-):
+) -> None:
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
     logging.info(f"Ordering items in catalogues from stage in: {catalogue_dirs}")
@@ -167,8 +168,10 @@ def main(
     logging.info(f"Order options: {order_options}")
     stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
     logging.info(f"Coordinates: {coordinates}")
+
     if not verify_coordinates(coordinates):
         raise ValueError(f"Invalid coordinates: {coordinates}")
+
     logging.info(f"Target workspace: {workspace}")
 
     for stac_item in stac_items:
@@ -213,7 +216,8 @@ def main(
                 workspace,
                 workspace_bucket,
             )
-            return
+            raise
+
         # Update the STAC record after submitting the order
         update_stac_item_ordered(
             stac_item.stac_json,
@@ -238,6 +242,8 @@ def main(
                     obj,
                     customer_reference,
                 )
+
+            gdal_translate(stac_item.stac_json)
         except Exception as e:
             reason = f"Failed to retrieve data: {e}"
             logging.error(reason, exc_info=True)
@@ -250,7 +256,8 @@ def main(
                 workspace_bucket,
                 order_id,
             )
-            return
+            raise
+
         update_stac_item_success(
             stac_item.stac_json,
             stac_item.file_name,
@@ -263,49 +270,53 @@ def main(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Order Airbus data")
-    parser.add_argument("workspace", type=str, help="Workspace name")
-    parser.add_argument("workspace_bucket", type=str, help="Workspace bucket")
-    parser.add_argument(
-        "commercial_data_bucket", type=str, help="Commercial data bucket"
-    )
-    parser.add_argument("pulsar_url", type=str, help="Pulsar URL")
-    parser.add_argument("product_bundle", type=str, help="Product bundle")
-    parser.add_argument(
-        "--coordinates", type=str, required=True, help="Stringified list of coordinates"
-    )
-    parser.add_argument(
-        "--catalogue_dirs",
-        nargs="+",
-        required=True,
-        help="List of catalogue directories",
-    )
-    parser.add_argument(
-        "--end_users",
-        type=str,
-        required=True,
-        help="Stringified list of end user names and countries",
-    )
-    parser.add_argument(
-        "--licence",
-        type=str,
-        required=True,
-        help="Licence used for the order",
-    )
+    try:
+        parser = argparse.ArgumentParser(description="Order Airbus data")
+        parser.add_argument("workspace", type=str, help="Workspace name")
+        parser.add_argument("workspace_bucket", type=str, help="Workspace bucket")
+        parser.add_argument(
+            "commercial_data_bucket", type=str, help="Commercial data bucket"
+        )
+        parser.add_argument("pulsar_url", type=str, help="Pulsar URL")
+        parser.add_argument("product_bundle", type=str, help="Product bundle")
+        parser.add_argument(
+            "--coordinates", type=str, required=True, help="Stringified list of coordinates"
+        )
+        parser.add_argument(
+            "--catalogue_dirs",
+            nargs="+",
+            required=True,
+            help="List of catalogue directories",
+        )
+        parser.add_argument(
+            "--end_users",
+            type=str,
+            required=True,
+            help="Stringified list of end user names and countries",
+        )
+        parser.add_argument(
+            "--licence",
+            type=str,
+            required=True,
+            help="Licence used for the order",
+        )
 
-    args = parser.parse_args()
+        args = parser.parse_args()
 
-    coordinates = json.loads(args.coordinates)
-    end_users = json.loads(args.end_users) if args.end_users else None
+        coordinates = json.loads(args.coordinates)
+        end_users = json.loads(args.end_users) if args.end_users else None
 
-    main(
-        args.workspace,
-        args.workspace_bucket,
-        args.commercial_data_bucket,
-        args.pulsar_url,
-        args.product_bundle,
-        coordinates,
-        args.catalogue_dirs,
-        args.licence,
-        end_users,
-    )
+        main(
+            args.workspace,
+            args.workspace_bucket,
+            args.commercial_data_bucket,
+            args.pulsar_url,
+            args.product_bundle,
+            coordinates,
+            args.catalogue_dirs,
+            args.licence,
+            end_users,
+        )
+    except Exception as e:
+        logging.error(f"Workflow failed with error: {e}")
+        raise SystemExit(1)

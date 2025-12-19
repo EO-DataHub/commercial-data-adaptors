@@ -1,7 +1,7 @@
 cwlVersion: v1.0
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 0.1.2
+s:softwareVersion: 0.2.0
 schemas:
   - http://schema.org/version/9.0/schemaorg-current-http.rdf
 $graph:
@@ -77,7 +77,7 @@ $graph:
     id: airbus-optical-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/airbus-optical-adaptor:0.0.7
+        dockerPull: public.ecr.aws/eodh/airbus-optical-adaptor:0.1.0
     requirements:
       EnvVarRequirement:
         envDef:
