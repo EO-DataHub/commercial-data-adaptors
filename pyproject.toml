@@ -1,0 +1,40 @@
+[project]
+name = "commercial-data-adaptors"
+version = "0.0.0"
+requires-python = ">=3.13,<3.14"
+
+[dependency-groups]
+dev = [
+    "pre-commit",
+    "pyright",
+    "ruff",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 119
+
+[tool.ruff.lint]
+select = [
+    "E",    # Pycodestyle errors
+    "W",    # Pycodestyle warnings
+    "F",    # Pyflakes
+    "I",    # isort
+    "RUF",  # RUF-specific rules
+    "SIM",  # Simplifications
+    "B",    # Bugbear
+    "ANN",  # Annotations
+    "PLC",  # Pylint convention
+    "PLE",  # Pylint errors
+    "UP",   # pyupgrade
+    "FURB", # refurb
+    "PT",   # pytest
+]
+ignore = [
+    "E501",   # line too long
+    "SIM108", # ternary operator
+    "SIM103", # return bool directly
+    "ANN401", # dynamically typed expressions (Any)
+]

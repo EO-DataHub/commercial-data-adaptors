@@ -1,27 +1,27 @@
 import json
 import logging
 import os
-from datetime import datetime, timezone
-from typing import List, Union
+from datetime import UTC, datetime
+from typing import Any
 
 import boto3
 
-Coordinate = Union[List[float], tuple[float, float]]
+Coordinate = list[float] | tuple[float, float]
 
 
 def current_time_iso8601() -> str:
     """Return the current time in ISO 8601 format"""
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
 def write_stac_item_and_catalog(
     stac_item: dict,
     stac_item_filename: str,
     collection_id: str,
-    item_id: str,
+    item_id: str | None,
     workspace: str,
     workspaces_bucket: str,
-):
+) -> None:
     """Creates local catalog containing final STAC item to be used as a record for the order"""
     # Rewrite STAC links to point to local files only
     stac_item["links"] = [
@@ -73,9 +73,7 @@ def write_stac_item_and_catalog(
         # obtain the existing collection from s3 if possible
         s3_client = boto3.client("s3")
         key = f"{workspace}/commercial-data/planet/{collection_id}.json"
-        logging.info(
-            f"Retrieving existing collection from s3: {key}, {workspaces_bucket}"
-        )
+        logging.info(f"Retrieving existing collection from s3: {key}, {workspaces_bucket}")
         response = s3_client.get_object(Bucket=workspaces_bucket, Key=key)
         stac_collection = json.loads(response["Body"].read())
 
@@ -117,7 +115,7 @@ def write_stac_item_and_catalog(
     logging.info(f"STAC collection: {stac_collection}")
 
 
-def update_stac_order_status(stac_item: dict, order_id: str, order_status: str):
+def update_stac_order_status(stac_item: dict, order_id: str | None, order_status: str) -> None:
     """Update the STAC item with the order status using the STAC Order extension"""
     # Update or add fields relating to the order
     if "properties" not in stac_item:
@@ -136,7 +134,7 @@ def update_stac_order_status(stac_item: dict, order_id: str, order_status: str):
         stac_item["stac_extensions"].append(order_extension_url)
 
 
-def get_key_from_stac(stac_item: dict, key: str):
+def get_key_from_stac(stac_item: dict, key: str) -> Any:
     """Extract a nested key from a STAC item. Key given as a dot-separated string."""
     parts = key.split(".")
     value = stac_item
@@ -155,7 +153,7 @@ def get_item_hrefs_from_catalogue(catalogue_dir: str) -> list:
     if not os.path.exists(catalog_path):
         raise FileNotFoundError(f"The file {catalog_path} does not exist.")
 
-    with open(catalog_path, "r", encoding="utf-8") as f:
+    with open(catalog_path, encoding="utf-8") as f:
         catalog = json.load(f)
 
     item_hrefs = []
@@ -176,24 +174,15 @@ def is_valid_coordinate(coordinate: Coordinate) -> bool:
         )
         return False
     longitude, latitude = coordinate
-    if not isinstance(latitude, (int, float)) or not isinstance(
-        longitude, (int, float)
-    ):
-        logging.warning(
-            f"Invalid coordinate type. {longitude}: {type(longitude)}, {latitude}: {type(latitude)}"
-        )
+    if not isinstance(latitude, (int, float)) or not isinstance(longitude, (int, float)):
+        logging.warning(f"Invalid coordinate type. {longitude}: {type(longitude)}, {latitude}: {type(latitude)}")
         return False
     if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
-        logging.warning(
-            f"Invalid coordinate value: longitude={longitude}, latitude={latitude}"
-        )
+        logging.warning(f"Invalid coordinate value: longitude={longitude}, latitude={latitude}")
         return False
     return True
 
 
-def verify_coordinates(coordinates: List[List[Coordinate]]) -> bool:
+def verify_coordinates(coordinates: list[list[Coordinate]]) -> bool:
     """Verify that a list of coordinates is valid."""
-    return all(
-        all(is_valid_coordinate(coord) for coord in polygons)
-        for polygons in coordinates
-    )
+    return all(all(is_valid_coordinate(coord) for coord in polygons) for polygons in coordinates)

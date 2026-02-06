@@ -10,7 +10,7 @@ from kubernetes import client, config
 CLUSTER_PREFIX = os.getenv("CLUSTER_PREFIX", "eodhp")
 
 
-def decrypt_airbus_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
+def decrypt_airbus_api_key(ciphertext_b64: str, otp_key_b64: str) -> str | None:
     """
     Decrypts a ciphertext using One-Time Pad (OTP) via XOR.
 
@@ -28,15 +28,14 @@ def decrypt_airbus_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
             raise ValueError("Ciphertext and OTP key must be the same length.")
 
         # XOR decryption
-        plaintext_bytes = bytes(c ^ k for c, k in zip(ciphertext, otp_key))
+        plaintext_bytes = bytes(c ^ k for c, k in zip(ciphertext, otp_key, strict=True))
 
-        return plaintext_bytes.decode("utf-8")
+        try:
+            return plaintext_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            logging.error("Warning: Decrypted data is not valid UTF-8. Returning raw bytes.")
+            return plaintext_bytes.hex()
 
-    except UnicodeDecodeError:
-        logging.error(
-            "Warning: Decrypted data is not valid UTF-8. Returning raw bytes."
-        )
-        return plaintext_bytes.hex()
     except ValueError as e:
         logging.error(f"Integrity check failed: {e}")
         return None
@@ -45,7 +44,7 @@ def decrypt_airbus_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
         return None
 
 
-def get_airbus_api_key(workspace: str) -> str:
+def get_airbus_api_key(workspace: str) -> str | None:
     """
     Retrieve an OTP (One-Time Pad) from Kubernetes Secrets and use it to decrypt
     an encrypted API key stored in AWS Secrets Manager.
@@ -71,14 +70,10 @@ def get_airbus_api_key(workspace: str) -> str:
     otp_key_b64 = secret_data.data.get("otp")  # Adjusted key name for OTP
 
     if not otp_key_b64:
-        raise ValueError(
-            f"OTP key not found in Kubernetes Secret in namespace {namespace}."
-        )
+        raise ValueError(f"OTP key not found in Kubernetes Secret in namespace {namespace}.")
 
     # Initialize AWS Secrets Manager client and fetch the provider's ciphertext
-    logging.info(
-        f"Fetching ciphertext for provider '{provider}' from AWS Secrets Manager..."
-    )
+    logging.info(f"Fetching ciphertext for provider '{provider}' from AWS Secrets Manager...")
     secrets_client = boto3.client("secretsmanager")
     response = secrets_client.get_secret_value(SecretId=secretId)
 
@@ -89,9 +84,7 @@ def get_airbus_api_key(workspace: str) -> str:
     # Retrieve the encrypted API key (Base64 encoded ciphertext)
     ciphertext_b64 = secret_dict.get(provider)
     if not ciphertext_b64:
-        raise ValueError(
-            f"Ciphertext (encrypted API key) not found in AWS Secrets Manager for provider {provider}."
-        )
+        raise ValueError(f"Ciphertext (encrypted API key) not found in AWS Secrets Manager for provider {provider}.")
 
     # Decrypt the API key using the OTP key
     plaintext_api_key = decrypt_airbus_api_key(ciphertext_b64, otp_key_b64)
@@ -101,7 +94,7 @@ def get_airbus_api_key(workspace: str) -> str:
     return plaintext_api_key
 
 
-def get_airbus_contracts(workspace: str) -> str:
+def get_airbus_contracts(workspace: str) -> dict:
     """
     Retrieve the contracts for Airbus from K8s secret.
 
@@ -120,9 +113,7 @@ def get_airbus_contracts(workspace: str) -> str:
     contracts_b64 = secret_data.data.get("contracts")
 
     if not contracts_b64:
-        raise ValueError(
-            f"Contracts not found in Kubernetes Secret in namespace {namespace}."
-        )
+        raise ValueError(f"Contracts not found in Kubernetes Secret in namespace {namespace}.")
 
     contracts = json.loads(base64.b64decode(contracts_b64).decode("utf-8"))
 

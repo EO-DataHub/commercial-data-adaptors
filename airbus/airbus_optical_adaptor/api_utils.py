@@ -1,13 +1,12 @@
 import logging
 from datetime import datetime
+from typing import Any
 
 import requests
 from common.auth_utils import generate_access_token, get_airbus_contracts
 
 
-def get_projection(
-    contract_id: str, product_type: str, coordinates: list, workspace: str
-) -> str:
+def get_projection(contract_id: str, product_type: str, coordinates: list, workspace: str) -> str | None:
     """Get the projection for the given coordinates"""
     url = f"https://order.api.oneatlas.airbus.com/api/v1/contracts/{contract_id}/productTypes/{product_type}/options"
 
@@ -44,8 +43,8 @@ def build_order_request_body(
     workspace: str,
     licence: str,
     customer_reference: str,
-    item_uuids: list = None,
-    end_users: list = None,
+    item_uuids: list | None = None,
+    end_users: list | None = None,
 ) -> dict:
     """Get the body of the POST request to submit an order"""
 
@@ -58,9 +57,8 @@ def build_order_request_body(
 
     if collection_id == "airbus_pneo_data":
         product_type = "PleiadesNeoArchiveMono"
-        item_uuids = item_uuids
         item_id = None
-        if len(item_uuids) > 1:
+        if item_uuids and len(item_uuids) > 1:
             product_type = "PleiadesNeoArchiveMulti"
             order_options["spectralProcessing"] = "full_bundle"
         elif order_options.get("spectralProcessing") == "bundle":
@@ -136,16 +134,12 @@ def build_order_request_body(
         )
     if order_options.get("projection"):
         projection = get_projection(contract_id, product_type, coordinates, workspace)
-        order_request_body["optionsPerProductType"][0]["options"].append(
-            {"key": "projection_1", "value": projection}
-        )
+        order_request_body["optionsPerProductType"][0]["options"].append({"key": "projection_1", "value": projection})
 
     if item_uuids:
         data_source_ids = []
         for item_uuid in item_uuids:
-            data_source_ids.append(
-                {"catalogId": "PublicMOC", "catalogItemId": item_uuid}
-            )
+            data_source_ids.append({"catalogId": "PublicMOC", "catalogItemId": item_uuid})
         order_request_body["items"][0]["dataSourceIds"] = data_source_ids
 
     if item_id:
@@ -164,9 +158,9 @@ def post_submit_order(
     order_options: dict,
     workspace: str,
     licence: str,
-    item_uuids: list = None,
-    end_users: list = None,
-) -> str:
+    item_uuids: list | None = None,
+    end_users: list | None = None,
+) -> tuple[Any, str]:
     """Submit an order for an optical acquisition via POST request"""
     url = "https://order.api.oneatlas.airbus.com/api/v1/orders"
 
@@ -201,7 +195,7 @@ def post_submit_order(
     return body.get("salesOrderId"), customer_reference
 
 
-def get_contract_id(workspace: str, collection_id: str) -> str:
+def get_contract_id(workspace: str, collection_id: str) -> str | None:
     """Get the contract ID based on the workspace and collection ID"""
 
     contracts = get_airbus_contracts(workspace).get("optical", {})

@@ -31,12 +31,8 @@ def poll_s3_for_data(
         logging.info(f"Checking for {folder} folder in bucket {source_bucket}...")
         response = s3_client.list_objects_v2(Bucket=source_bucket, Prefix=folder)
         for obj in response.get("Contents", []):
-            if obj["Key"].endswith(
-                f"/{order_id}/manifest.json"
-            ):  # manifest.json is the final file to be delivered
-                logging.info(
-                    f"Data available: file '{obj['Key']}' found in bucket '{source_bucket}'."
-                )
+            if obj["Key"].endswith(f"/{order_id}/manifest.json"):  # manifest.json is the final file to be delivered
+                logging.info(f"Data available: file '{obj['Key']}' found in bucket '{source_bucket}'.")
                 return obj
 
         # Check for timeout
@@ -49,9 +45,7 @@ def poll_s3_for_data(
         time.sleep(polling_interval)
 
 
-def download_and_store_locally(
-    source_bucket: str, parent_folder: str, destination_folder: str
-):
+def download_and_store_locally(source_bucket: str, parent_folder: str, destination_folder: str) -> None:
     """Download and store order files from an S3 bucket to a local folder"""
     # Create the destination folder if it doesn't exist
     if not os.path.exists(destination_folder):
@@ -62,13 +56,9 @@ def download_and_store_locally(
     for obj in response.get("Contents", []):
         if not obj["Key"].endswith("/"):
             logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
-            destination_file_path = os.path.join(
-                destination_folder, os.path.basename(obj["Key"])
-            )
+            destination_file_path = os.path.join(destination_folder, os.path.basename(obj["Key"]))
             s3_client.download_file(source_bucket, obj["Key"], destination_file_path)
-            logging.info(
-                f"Downloaded '{obj['Key']}' from bucket '{source_bucket}' to '{destination_file_path}'."
-            )
+            logging.info(f"Downloaded '{obj['Key']}' from bucket '{source_bucket}' to '{destination_file_path}'.")
 
             if obj["Key"].endswith(".zip"):
                 # Planet orders may arrive as a .zip file
@@ -87,6 +77,6 @@ def retrieve_stac_item(file_path: str) -> dict:
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The file {file_path} does not exist.")
 
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(file_path, encoding="utf-8") as f:
         stac_item = json.load(f)
     return stac_item

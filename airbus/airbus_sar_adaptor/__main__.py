@@ -2,9 +2,7 @@ import argparse
 import json
 import logging
 import os
-from typing import List
 
-from airbus_sar_adaptor.api_utils import is_order_in_progress, post_submit_order
 from common.s3_utils import download_and_store_locally, poll_s3_for_data
 from common.stac_utils import (
     get_item_hrefs_from_catalogue,
@@ -14,6 +12,8 @@ from common.stac_utils import (
     update_stac_item_ordered,
     update_stac_item_success,
 )
+
+from airbus_sar_adaptor.api_utils import is_order_in_progress, post_submit_order
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,7 +25,7 @@ logging.basicConfig(
 class STACItem:
     """Class to represent a STAC item and its properties"""
 
-    def __init__(self, stac_item_path: str):
+    def __init__(self, stac_item_path: str) -> None:
         self.file_path = stac_item_path
         self.file_name = os.path.basename(stac_item_path)
         self.stac_json = retrieve_stac_item(stac_item_path)
@@ -34,7 +34,7 @@ class STACItem:
         self.order_status = get_key_from_stac(self.stac_json, "order:status")
 
 
-def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
+def prepare_stac_items_to_order(catalogue_dirs: list[str]) -> list[STACItem]:
     """Prepare a list of STAC items to order"""
     stac_item_paths = []
     for catalogue_dir in catalogue_dirs:
@@ -55,7 +55,7 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
 
 
 def get_order_options(
-    product_type: str, orbit: str, resolution: str, map_projection: str
+    product_type: str | None, orbit: str | None, resolution: str | None, map_projection: str | None
 ) -> dict:
     """Return the order options for the given product bundle"""
     available_types = ["SSC", "MGD", "GEC", "EEC"]
@@ -73,9 +73,7 @@ def get_order_options(
         order_details["productType"] = product_type
 
     if orbit not in available_orbits:
-        raise NotImplementedError(
-            f"Orbit {orbit} is not valid. Currently implemented orbits are {available_orbits}"
-        )
+        raise NotImplementedError(f"Orbit {orbit} is not valid. Currently implemented orbits are {available_orbits}")
     else:
         order_details["orbit"] = orbit
 
@@ -101,24 +99,24 @@ def main(
     commercial_data_bucket: str,
     pulsar_url: str,
     product_bundle: str,
-    coordinates: List,
-    catalogue_dirs: List[str],
+    coordinates: list,
+    catalogue_dirs: list[str],
     licence: str,
     workspace: str,
-):
-    product_bundle = json.loads(product_bundle)
+) -> None:
+    product_bundle_data: dict = json.loads(product_bundle)
 
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
     logging.info(f"Ordering items in catalogues from stage in: {catalogue_dirs}")
     order_options = get_order_options(
-        product_type=product_bundle.get("product_type"),
-        map_projection=product_bundle.get("projection"),
-        orbit=product_bundle.get("orbit"),
-        resolution=product_bundle.get("resolution"),
+        product_type=product_bundle_data.get("product_type"),
+        map_projection=product_bundle_data.get("projection"),
+        orbit=product_bundle_data.get("orbit"),
+        resolution=product_bundle_data.get("resolution"),
     )
     logging.info(f"Order options: {order_options}")
-    stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
+    stac_items: list[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
 
     for stac_item in stac_items:
         try:
@@ -137,9 +135,9 @@ def main(
                     workspace_bucket,
                 )
                 return
-            order_id = post_submit_order(
-                acquisition_id, order_options, workspace, licence
-            )
+            order_id = post_submit_order(acquisition_id, order_options, workspace, licence)
+            if not order_id:
+                raise ValueError(f"No order ID returned for acquisition {acquisition_id}")
             order_id = order_id.split("_")[0]
         except Exception as e:
             reason = f"Failed to submit order: {e}"
@@ -167,9 +165,7 @@ def main(
             # Wait for data from airbus to arrive, then move it to the workspace
             # Archive is of the format SO_<order_id>_<item_number>_1.tar.gz
             # Timeout extended to 7 days to accommodate for delays in confirming orders between Airbus and the user
-            objs = poll_s3_for_data(
-                commercial_data_bucket, f"SO_{order_id}", ".tar.gz", timeout=604800
-            )
+            objs = poll_s3_for_data(commercial_data_bucket, f"SO_{order_id}", ".tar.gz", timeout=604800)
             for obj in objs:
                 download_and_store_locally(
                     commercial_data_bucket,
@@ -203,14 +199,10 @@ def main(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Order Airbus data")
     parser.add_argument("workspace_bucket", type=str, help="Workspace bucket")
-    parser.add_argument(
-        "commercial_data_bucket", type=str, help="Commercial data bucket"
-    )
+    parser.add_argument("commercial_data_bucket", type=str, help="Commercial data bucket")
     parser.add_argument("pulsar_url", type=str, help="Pulsar URL")
     parser.add_argument("product_bundle", type=str, help="Product bundle")
-    parser.add_argument(
-        "--coordinates", type=str, required=True, help="Stringified list of coordinates"
-    )
+    parser.add_argument("--coordinates", type=str, required=True, help="Stringified list of coordinates")
     parser.add_argument(
         "--catalogue_dirs",
         nargs="+",
