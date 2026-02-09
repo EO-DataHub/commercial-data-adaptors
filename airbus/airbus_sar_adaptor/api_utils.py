@@ -10,7 +10,7 @@ def post_submit_order(
     workspace: str,
     licence: str,
     env: str = "prod",
-) -> str:
+) -> str | None:
     """Submit an order for a SAR acquisition via POST request"""
     if env == "prod":
         url = "https://sar.api.oneatlas.airbus.com"
@@ -72,9 +72,7 @@ def post_items_status(workspace: str, env: str = "prod") -> dict:
 
     logging.info(f"Sending POST request to query status of all orders with {body}")
 
-    response = requests.post(
-        f"{url}/v1/sar/orders/*/items/status", json=body, headers=headers
-    )
+    response = requests.post(f"{url}/v1/sar/orders/*/items/status", json=body, headers=headers)
     response.raise_for_status()
 
     body = response.json()
@@ -82,9 +80,7 @@ def post_items_status(workspace: str, env: str = "prod") -> dict:
     return body
 
 
-def is_order_in_progress(
-    acquisition_id: str, workspace: str, env: str = "prod"
-) -> bool:
+def is_order_in_progress(acquisition_id: str, workspace: str, env: str = "prod") -> bool:
     """Check if an order for a SAR acquisition is in progress"""
     status = post_items_status(workspace, env)
     for feature in status:

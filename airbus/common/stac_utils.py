@@ -3,14 +3,14 @@ import logging
 import mimetypes
 import os
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import List, Union
+from typing import Any
 
 import boto3
 import pulsar
 
-Coordinate = Union[List[float], tuple[float, float]]
+Coordinate = list[float] | tuple[float, float]
 
 
 REGEX_PATTERNS = {
@@ -174,24 +174,24 @@ def retrieve_stac_item(file_path: str) -> dict:
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The file {file_path} does not exist.")
 
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(file_path, encoding="utf-8") as f:
         stac_item = json.load(f)
     return stac_item
 
 
 def current_time_iso8601() -> str:
     """Return the current time in ISO 8601 format"""
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
 def write_stac_item_and_catalog(
     stac_item: dict,
     stac_item_filename: str,
     collection_id: str,
-    item_id: str,
+    item_id: str | None,
     workspace: str,
     workspaces_bucket: str,
-):
+) -> None:
     """Creates local catalog containing final STAC item to be used as a record for the order"""
     # Rewrite STAC links to point to local files only
     stac_item["links"] = [
@@ -243,9 +243,7 @@ def write_stac_item_and_catalog(
         # obtain the existing collection from s3 if possible
         s3_client = boto3.client("s3")
         key = f"{workspace}/commercial-data/airbus/{collection_id}.json"
-        logging.info(
-            f"Retrieving existing collection from s3: {key}, {workspaces_bucket}"
-        )
+        logging.info(f"Retrieving existing collection from s3: {key}, {workspaces_bucket}")
         response = s3_client.get_object(Bucket=workspaces_bucket, Key=key)
         stac_collection = json.loads(response["Body"].read())
 
@@ -286,7 +284,7 @@ def write_stac_item_and_catalog(
     logging.info(f"STAC collection: {stac_collection}")
 
 
-def update_stac_order_status(stac_item: dict, order_id: str, order_status: str):
+def update_stac_order_status(stac_item: dict, order_id: str | None, order_status: str) -> None:
     """Update the STAC item with the order status using the STAC Order extension"""
     # Update or add fields relating to the order
     if "properties" not in stac_item:
@@ -305,7 +303,7 @@ def update_stac_order_status(stac_item: dict, order_id: str, order_status: str):
         stac_item["stac_extensions"].append(order_extension_url)
 
 
-def get_key_from_stac(stac_item: dict, key: str):
+def get_key_from_stac(stac_item: dict, key: str) -> Any:
     """Extract a nested key from a STAC item. Key given as a dot-separated string."""
     parts = key.split(".")
     value = stac_item
@@ -325,7 +323,7 @@ def ingest_stac_item(
     workspace: str,
     collection_id: str,
     file_name: str,
-):
+) -> None:
     """Ingest the STAC item to the S3 bucket and send a Pulsar message"""
     # Upload the STAC item to S3
     s3_client = boto3.client("s3")
@@ -334,21 +332,15 @@ def ingest_stac_item(
     item_key = f"{workspace}/{parent_catalog_name}/airbus/{collection_id}/{file_name}"
     s3_client.put_object(Body=json.dumps(stac_item), Bucket=s3_bucket, Key=item_key)
 
-    logging.info(
-        f"Uploaded STAC item to S3 bucket '{s3_bucket}' with key '{item_key}'."
-    )
+    logging.info(f"Uploaded STAC item to S3 bucket '{s3_bucket}' with key '{item_key}'.")
 
     transformed_item_key = (
         f"transformed/catalogs/user/catalogs/{workspace}/catalogs/{parent_catalog_name}/catalogs/"
         f"airbus/collections/{collection_id}/items/{file_name}"
     )
-    s3_client.put_object(
-        Body=json.dumps(stac_item), Bucket=s3_bucket, Key=transformed_item_key
-    )
+    s3_client.put_object(Body=json.dumps(stac_item), Bucket=s3_bucket, Key=transformed_item_key)
 
-    logging.info(
-        f"Uploaded STAC item to S3 bucket '{s3_bucket}' with key '{transformed_item_key}'."
-    )
+    logging.info(f"Uploaded STAC item to S3 bucket '{s3_bucket}' with key '{transformed_item_key}'.")
 
     # Send a Pulsar message
     pulsar_client = pulsar.Client(pulsar_url)
@@ -395,7 +387,7 @@ def update_stac_item_failure(
     reason: str,
     workspace: str,
     workspace_bucket: str,
-    order_id: str = None,
+    order_id: str | None = None,
 ) -> None:
     """Update the STAC item with the failure order status"""
     # Mark the order as failed in the local STAC item
@@ -409,9 +401,7 @@ def update_stac_item_failure(
     stac_item["properties"]["updated"] = current_time
 
     # Create local record of attempted order, to be used as the workflow output
-    write_stac_item_and_catalog(
-        stac_item, file_name, collection_id, order_id, workspace, workspace_bucket
-    )
+    write_stac_item_and_catalog(stac_item, file_name, collection_id, order_id, workspace, workspace_bucket)
 
 
 def update_stac_item_ordered(
@@ -422,7 +412,7 @@ def update_stac_item_ordered(
     s3_bucket: str,
     pulsar_url: str,
     workspace: str,
-):
+) -> None:
     """Update the STAC item with the ordered order status"""
     logging.info(f"Updating STAC item with order ID: {order_id} to 'ordered' status.")
     # Mark the order as ordered in the local STAC item
@@ -435,9 +425,7 @@ def update_stac_item_ordered(
 
     # Ingest the updated STAC item to the catalog
     try:
-        ingest_stac_item(
-            stac_item, s3_bucket, pulsar_url, workspace, collection_id, file_name
-        )
+        ingest_stac_item(stac_item, s3_bucket, pulsar_url, workspace, collection_id, file_name)
     except Exception as e:
         logging.error(f"Failed to ingest STAC item: {e}", exc_info=True)
 
@@ -450,7 +438,7 @@ def update_stac_item_success(
     directory: str,
     workspace: str,
     workspace_bucket: str,
-):
+) -> None:
     """Update the STAC item with the assets and success order status"""
     # Add all files in the directory as assets to the STAC item
     name_counter = {}
@@ -494,9 +482,7 @@ def update_stac_item_success(
     stac_item["properties"]["published"] = current_time
 
     # Create local record of the order, to be used as the workflow output
-    write_stac_item_and_catalog(
-        stac_item, file_name, collection_id, order_id, workspace, workspace_bucket
-    )
+    write_stac_item_and_catalog(stac_item, file_name, collection_id, order_id, workspace, workspace_bucket)
 
 
 def get_item_hrefs_from_catalogue(catalogue_dir: str) -> list:
@@ -505,7 +491,7 @@ def get_item_hrefs_from_catalogue(catalogue_dir: str) -> list:
     if not os.path.exists(catalog_path):
         raise FileNotFoundError(f"The file {catalog_path} does not exist.")
 
-    with open(catalog_path, "r", encoding="utf-8") as f:
+    with open(catalog_path, encoding="utf-8") as f:
         catalog = json.load(f)
 
     item_hrefs = []
@@ -526,24 +512,15 @@ def is_valid_coordinate(coordinate: Coordinate) -> bool:
         )
         return False
     longitude, latitude = coordinate
-    if not isinstance(latitude, (int, float)) or not isinstance(
-        longitude, (int, float)
-    ):
-        logging.warning(
-            f"Invalid coordinate type. {longitude}: {type(longitude)}, {latitude}: {type(latitude)}"
-        )
+    if not isinstance(latitude, (int, float)) or not isinstance(longitude, (int, float)):
+        logging.warning(f"Invalid coordinate type. {longitude}: {type(longitude)}, {latitude}: {type(latitude)}")
         return False
     if not (-90 <= latitude <= 90) or not (-180 <= longitude <= 180):
-        logging.warning(
-            f"Invalid coordinate value: longitude={longitude}, latitude={latitude}"
-        )
+        logging.warning(f"Invalid coordinate value: longitude={longitude}, latitude={latitude}")
         return False
     return True
 
 
-def verify_coordinates(coordinates: List[List[Coordinate]]) -> bool:
+def verify_coordinates(coordinates: list[list[Coordinate]]) -> bool:
     """Verify that a list of coordinates is valid."""
-    return all(
-        all(is_valid_coordinate(coord) for coord in polygons)
-        for polygons in coordinates
-    )
+    return all(all(is_valid_coordinate(coord) for coord in polygons) for polygons in coordinates)

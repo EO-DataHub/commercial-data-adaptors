@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+from typing import Any
 
 import boto3
 from kubernetes import client, config
@@ -13,7 +14,7 @@ import planet
 CLUSTER_PREFIX = os.getenv("CLUSTER_PREFIX", "eodhp")
 
 
-def decrypt_planet_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
+def decrypt_planet_api_key(ciphertext_b64: str, otp_key_b64: str) -> str | None:
     """
     Decrypts a ciphertext using One-Time Pad (OTP) via XOR.
 
@@ -31,15 +32,14 @@ def decrypt_planet_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
             raise ValueError("Ciphertext and OTP key must be the same length.")
 
         # XOR decryption
-        plaintext_bytes = bytes(c ^ k for c, k in zip(ciphertext, otp_key))
+        plaintext_bytes = bytes(c ^ k for c, k in zip(ciphertext, otp_key, strict=True))
 
-        return plaintext_bytes.decode("utf-8")
+        try:
+            return plaintext_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            logging.error("Warning: Decrypted data is not valid UTF-8. Returning raw bytes.")
+            return plaintext_bytes.hex()
 
-    except UnicodeDecodeError:
-        logging.error(
-            "Warning: Decrypted data is not valid UTF-8. Returning raw bytes."
-        )
-        return plaintext_bytes.hex()
     except ValueError as e:
         logging.error(f"Integrity check failed: {e}")
         return None
@@ -48,7 +48,7 @@ def decrypt_planet_api_key(ciphertext_b64: str, otp_key_b64: str) -> str:
         return None
 
 
-def get_planet_api_key(workspace: str) -> str:
+def get_planet_api_key(workspace: str) -> str | None:
     """
     Retrieve an OTP (One-Time Pad) from Kubernetes Secrets and use it to decrypt
     an encrypted API key stored in AWS Secrets Manager.
@@ -74,14 +74,10 @@ def get_planet_api_key(workspace: str) -> str:
     otp_key_b64 = secret_data.data.get("otp")  # Adjusted key name for OTP
 
     if not otp_key_b64:
-        raise ValueError(
-            f"OTP key not found in Kubernetes Secret in namespace {namespace}."
-        )
+        raise ValueError(f"OTP key not found in Kubernetes Secret in namespace {namespace}.")
 
     # Initialize AWS Secrets Manager client and fetch the provider's ciphertext
-    logging.info(
-        f"Fetching ciphertext for provider '{provider}' from AWS Secrets Manager..."
-    )
+    logging.info(f"Fetching ciphertext for provider '{provider}' from AWS Secrets Manager...")
     secrets_client = boto3.client("secretsmanager")
     response = secrets_client.get_secret_value(SecretId=secretId)
 
@@ -92,9 +88,7 @@ def get_planet_api_key(workspace: str) -> str:
     # Retrieve the encrypted API key (Base64 encoded ciphertext)
     ciphertext_b64 = secret_dict.get(provider)
     if not ciphertext_b64:
-        raise ValueError(
-            f"Ciphertext (encrypted API key) not found in AWS Secrets Manager for provider {provider}."
-        )
+        raise ValueError(f"Ciphertext (encrypted API key) not found in AWS Secrets Manager for provider {provider}.")
 
     # Decrypt the API key using the OTP key
     plaintext_api_key = decrypt_planet_api_key(ciphertext_b64, otp_key_b64)
@@ -104,9 +98,7 @@ def get_planet_api_key(workspace: str) -> str:
     return plaintext_api_key
 
 
-def get_aws_api_key_from_secret(
-    secret_name: str, secret_key: str, namespace: str = "ws-planet"
-) -> str:
+def get_aws_api_key_from_secret(secret_name: str, secret_key: str, namespace: str = "ws-planet") -> str:
     """Retrieve an API key from a Kubernetes secret"""
     # Create a Kubernetes API client
     config.load_incluster_config()
@@ -136,7 +128,7 @@ def create_order_request(
     item_id: str,
     collection_id: str,
     delivery: dict,
-    product_bundle: str,
+    product_bundle: dict,
     coordinates: list,
 ) -> dict:
     """Create an order for Planet data"""
@@ -180,8 +172,7 @@ def create_order_request(
         )
     else:
         logging.warning(
-            f"Product bundle {product_bundle['name']} does not allow clipping for AOI. "
-            f"Requesting full image"
+            f"Product bundle {product_bundle['name']} does not allow clipping for AOI. Requesting full image"
         )
         order = planet.order_request.build_request(
             name=order_id,
@@ -192,7 +183,7 @@ def create_order_request(
     return order
 
 
-async def submit_order(workspace: str, order_details: dict) -> str:
+async def submit_order(workspace: str, order_details: dict) -> Any:
     """Submit an order for Planet data"""
     planet_api_key = get_planet_api_key(workspace)
     auth = planet.Auth.from_key(planet_api_key)
@@ -207,14 +198,12 @@ async def submit_order(workspace: str, order_details: dict) -> str:
             message = str(e)
             if "400 Bad Request" in message or "Unable to accept order" in message:
                 search = re.compile(r"([0-9]{8}_[0-9]{6})")
-                item_id = order_details.get("name")
+                item_id = order_details.get("name", "")
                 dates = search.findall(item_id)
                 asset_timestamp = datetime.datetime.strptime(dates[0], "%Y%m%d_%H%M%S")
-                if asset_timestamp > datetime.datetime.now() - datetime.timedelta(
-                    hours=12
-                ):
+                if asset_timestamp > datetime.datetime.now() - datetime.timedelta(hours=12):
                     raise Exception(
                         "Order failed without using quota: Assets are not yet available for recent data. Please try again later."
-                    )
+                    ) from e
 
             raise Exception from e

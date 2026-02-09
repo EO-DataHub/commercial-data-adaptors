@@ -1,0 +1,5 @@
+{
+  "reportMissingImports": "warning",
+  "reportMissingModuleSource": "warning",
+  "reportAttributeAccessIssue": "warning"
+}

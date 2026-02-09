@@ -2,9 +2,7 @@ import argparse
 import json
 import logging
 import os
-from typing import Dict, List, Optional
 
-from airbus_optical_adaptor.api_utils import post_submit_order
 from common.s3_utils import download_and_store_locally, poll_s3_for_data
 from common.stac_utils import (
     OrderStatus,
@@ -16,6 +14,8 @@ from common.stac_utils import (
     update_stac_item_success,
     verify_coordinates,
 )
+
+from airbus_optical_adaptor.api_utils import post_submit_order
 
 logging.basicConfig(
     level=logging.INFO,
@@ -65,27 +65,22 @@ product_bundle_map = {
 class STACItem:
     """Class to represent a STAC item and its properties"""
 
-    def __init__(self, stac_item_path: str):
+    def __init__(self, stac_item_path: str) -> None:
         self.file_path = stac_item_path
         self.file_name = os.path.basename(stac_item_path)
         self.stac_json = retrieve_stac_item(stac_item_path)
-        self.acquisition_id = get_key_from_stac(
-            self.stac_json, "properties.acquisition_identifier"
-        )
+        self.acquisition_id = get_key_from_stac(self.stac_json, "properties.acquisition_identifier")
         self.collection_id = get_key_from_stac(self.stac_json, "collection")
         self.coordinates = get_key_from_stac(self.stac_json, "geometry.coordinates")
         self.multi_acquisition_ids = (
-            get_key_from_stac(
-                self.stac_json, "properties.composed_of_acquisition_identifiers"
-            )
-            or []
+            get_key_from_stac(self.stac_json, "properties.composed_of_acquisition_identifiers") or []
         )
         self.order_status = get_key_from_stac(self.stac_json, "order:status")
         self.item_uuid = get_key_from_stac(self.stac_json, "properties.id")
         self.item_uuids = []
 
 
-def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
+def prepare_stac_items_to_order(catalogue_dirs: list[str]) -> list[STACItem]:
     """Prepare a list of STAC items to order, including multi-acquisition items"""
     stac_item_paths = []
     for catalogue_dir in catalogue_dirs:
@@ -94,9 +89,7 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
         stac_item_paths += get_item_hrefs_from_catalogue(catalogue_dir)
     if not stac_item_paths:
         raise ValueError("No STAC items found in the given directories.")
-    acquisition_id_to_path = {
-        os.path.splitext(os.path.basename(path))[0]: path for path in stac_item_paths
-    }
+    acquisition_id_to_path = {os.path.splitext(os.path.basename(path))[0]: path for path in stac_item_paths}
     logging.info(f"STAC item paths: {stac_item_paths}")
 
     stac_items = []
@@ -104,33 +97,22 @@ def prepare_stac_items_to_order(catalogue_dirs: List[str]) -> List[STACItem]:
     for stac_item_path in stac_item_paths:
         stac_item_to_add = STACItem(stac_item_path)
         # Do not add the item if it is already part of a multi-acquisition item
-        if any(
-            stac_item_to_add.acquisition_id in stac_item.multi_acquisition_ids
-            for stac_item in stac_items
-        ):
+        if any(stac_item_to_add.acquisition_id in stac_item.multi_acquisition_ids for stac_item in stac_items):
             continue
         if stac_item_to_add.multi_acquisition_ids:
-            logging.info(
-                f"Item {stac_item_to_add.acquisition_id} is a multi-acquisition item"
-            )
-            logging.info(
-                f"Multi-acquisition IDs: {stac_item_to_add.multi_acquisition_ids}"
-            )
+            logging.info(f"Item {stac_item_to_add.acquisition_id} is a multi-acquisition item")
+            logging.info(f"Multi-acquisition IDs: {stac_item_to_add.multi_acquisition_ids}")
             for multi_acquisition_id in stac_item_to_add.multi_acquisition_ids:
                 # The order is incomplete if not all multi-acquisition items are present
                 multi_stac_item_path = acquisition_id_to_path.get(multi_acquisition_id)
                 if not multi_stac_item_path:
-                    raise ValueError(
-                        f"File {multi_acquisition_id} not found in given ids: {acquisition_id_to_path}"
-                    )
+                    raise ValueError(f"File {multi_acquisition_id} not found in given ids: {acquisition_id_to_path}")
                 # Add the UUID of each item to the main multi-acquisition item
                 multi_stac_item = STACItem(multi_stac_item_path)
                 stac_item_to_add.item_uuids.append(multi_stac_item.item_uuid)
             # Remove the multi-acquisition items from the list
             stac_items = [
-                item
-                for item in stac_items
-                if item.acquisition_id not in stac_item_to_add.multi_acquisition_ids
+                item for item in stac_items if item.acquisition_id not in stac_item_to_add.multi_acquisition_ids
             ]
         else:
             stac_item_to_add.item_uuids = [stac_item_to_add.item_uuid]
@@ -155,17 +137,17 @@ def main(
     commercial_data_bucket: str,
     pulsar_url: str,
     product_bundle: str,
-    coordinates: List,
-    catalogue_dirs: List[str],
+    coordinates: list,
+    catalogue_dirs: list[str],
     licence: str,
-    end_users: Optional[List[Dict[str, str]]] = None,
-):
+    end_users: list[dict[str, str]] | None = None,
+) -> None:
     """Submit an order for an acquisition, retrieve the data, and update the STAC item"""
     # Workspace STAC item should already be generated and ingested, with an order status of ordered.
     logging.info(f"Ordering items in catalogues from stage in: {catalogue_dirs}")
     order_options = get_order_options(product_bundle)
     logging.info(f"Order options: {order_options}")
-    stac_items: List[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
+    stac_items: list[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
     logging.info(f"Coordinates: {coordinates}")
     if not verify_coordinates(coordinates):
         raise ValueError(f"Invalid coordinates: {coordinates}")
@@ -266,14 +248,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Order Airbus data")
     parser.add_argument("workspace", type=str, help="Workspace name")
     parser.add_argument("workspace_bucket", type=str, help="Workspace bucket")
-    parser.add_argument(
-        "commercial_data_bucket", type=str, help="Commercial data bucket"
-    )
+    parser.add_argument("commercial_data_bucket", type=str, help="Commercial data bucket")
     parser.add_argument("pulsar_url", type=str, help="Pulsar URL")
     parser.add_argument("product_bundle", type=str, help="Product bundle")
-    parser.add_argument(
-        "--coordinates", type=str, required=True, help="Stringified list of coordinates"
-    )
+    parser.add_argument("--coordinates", type=str, required=True, help="Stringified list of coordinates")
     parser.add_argument(
         "--catalogue_dirs",
         nargs="+",

@@ -3,7 +3,6 @@ import os
 import tarfile
 import time
 import zipfile
-from typing import List
 
 import boto3
 
@@ -22,7 +21,7 @@ def poll_s3_for_data(
     item_suffix: str,
     polling_interval: int = 60,
     timeout: int = 86400,
-) -> List[dict]:
+) -> list[dict]:
     """Poll an S3 bucket for an item with given prefix and suffix, and return the object details"""
     start_time = time.time()
     end_time = start_time + timeout
@@ -34,33 +33,17 @@ def poll_s3_for_data(
         )
         response = s3.list_objects_v2(Bucket=source_bucket, Prefix=item_prefix)
 
-        matching_objects = [
-            obj
-            for obj in response.get("Contents", [])
-            if obj["Key"].endswith(item_suffix)
-        ]
+        matching_objects = [obj for obj in response.get("Contents", []) if obj["Key"].endswith(item_suffix)]
 
         if matching_objects:
-            logging.info(
-                f"Found {len(matching_objects)} matching items in bucket {source_bucket}."
-            )
-            logging.info(
-                f"Waiting {polling_interval} seconds before downloading all matching items."
-            )
+            logging.info(f"Found {len(matching_objects)} matching items in bucket {source_bucket}.")
+            logging.info(f"Waiting {polling_interval} seconds before downloading all matching items.")
             time.sleep(polling_interval)
 
             response = s3.list_objects_v2(Bucket=source_bucket, Prefix=item_prefix)
-            matching_objects = [
-                obj
-                for obj in response.get("Contents", [])
-                if obj["Key"].endswith(item_suffix)
-            ]
-            logging.info(
-                f"Returning {len(matching_objects)} matching objects after waiting."
-            )
-            logging.info(
-                f"Matching object keys: {[obj['Key'] for obj in matching_objects]}"
-            )
+            matching_objects = [obj for obj in response.get("Contents", []) if obj["Key"].endswith(item_suffix)]
+            logging.info(f"Returning {len(matching_objects)} matching objects after waiting.")
+            logging.info(f"Matching object keys: {[obj['Key'] for obj in matching_objects]}")
             return matching_objects
 
         # Check for timeout
@@ -73,7 +56,7 @@ def poll_s3_for_data(
         time.sleep(polling_interval)
 
 
-def download_and_store_locally(source_bucket: str, obj: dict, destination_folder: str):
+def download_and_store_locally(source_bucket: str, obj: dict, destination_folder: str) -> None:
     """Unzip the contents of an archive file from S3 and store them locally in a specified folder"""
     # Create the destination folder if it doesn't exist
     if not os.path.exists(destination_folder):
@@ -82,9 +65,7 @@ def download_and_store_locally(source_bucket: str, obj: dict, destination_folder
     # Download the archive to the destination folder
     local_archive_path = os.path.join(destination_folder, os.path.basename(obj["Key"]))
     s3.download_file(source_bucket, obj["Key"], local_archive_path)
-    logging.info(
-        f"Downloaded '{obj['Key']}' from bucket '{source_bucket}' to '{local_archive_path}'."
-    )
+    logging.info(f"Downloaded '{obj['Key']}' from bucket '{source_bucket}' to '{local_archive_path}'.")
 
     if local_archive_path.endswith(".tar.gz"):
         # Extract the contents of the .tar.gz file into the destination folder
@@ -101,6 +82,4 @@ def download_and_store_locally(source_bucket: str, obj: dict, destination_folder
         os.remove(local_archive_path)
         logging.info(f"Deleted archive '{local_archive_path}'.")
     else:
-        logging.warning(
-            f"Unsupported file format for '{local_archive_path}'. Skipping extraction."
-        )
+        logging.warning(f"Unsupported file format for '{local_archive_path}'. Skipping extraction.")
