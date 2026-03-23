@@ -18,6 +18,7 @@ from planet_adaptor.api_utils import (
     get_planet_api_key,
     submit_order,
 )
+from planet_adaptor.gdal_utils import gdal_translate
 from planet_adaptor.s3_utils import (
     download_and_store_locally,
     poll_s3_for_data,
@@ -73,6 +74,7 @@ regex_patterns = [
     (r"\/manifest\.json$", "manifest", "Manifest file"),
     (r"\/[^\\:?\"<>|]+_metadata\.json$", "metadata", "Metadata file"),
     (r"\/[^\\:?\"<>|]+_udm\d?+[^\\:?\"<>|]+\.tif$", "udm", "Usable data mask"),
+    (r"\/cog_[^\\:?\"<>|]+\.tif$", "COG", "Cloud Optimized GeoTIFF file"),
     (r"\/[^\\:?\"<>|]+\.tif$", "primaryAsset", "GeoTIFF image file"),
 ]
 
@@ -461,6 +463,11 @@ def main(
             order_id,
             workspace,
             workspace_bucket,
+        )
+
+        gdal_translate(stac_item.stac_json)
+        write_stac_item_and_catalog(
+            stac_item.stac_json, stac_item.file_name, collection_id, order_name, workspace, workspace_bucket
         )
 
 

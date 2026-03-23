@@ -3,3 +3,5 @@ boto3
 kubernetes
 pulsar-client
 planet
+gdal==3.10.3
+numpy

@@ -1,7 +1,7 @@
 cwlVersion: v1.0
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 0.1.2
+s:softwareVersion: 0.1.4
 schemas:
   - http://schema.org/version/9.0/schemaorg-current-http.rdf
 $graph:
@@ -67,7 +67,7 @@ $graph:
     id: planet-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/planet-adaptor:0.1.8
+        dockerPull: public.ecr.aws/eodh/planet-adaptor:0.2.3
     requirements:
       EnvVarRequirement:
         envDef:
