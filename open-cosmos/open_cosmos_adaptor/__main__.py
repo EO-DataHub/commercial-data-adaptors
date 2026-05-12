@@ -6,9 +6,11 @@ from pathlib import Path
 import requests
 
 from open_cosmos_adaptor.auth_utils import get_access_token, get_contract_info
-from s3_utils import retrieve_stac_item, poll_s3_for_data, download_and_store_locally
-from stac_utils import get_key_from_stac, get_item_hrefs_from_catalogue, update_stac_item_failure, \
+from s3_utils import download_and_store_locally
+from stac_utils import get_item_hrefs_from_catalogue, update_stac_item_failure, \
     update_stac_item_success, update_stac_item_ordered
+
+from pystac import Item
 
 logging.basicConfig(
     level=logging.INFO,
@@ -16,28 +18,8 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-products = [
-    "hammer-l1c-cogs",
-    "mantis-l1d-cogs",
-    "menut-l1a-cogs",
-    "menut-l1b-cogs",
-    "menut-l1c-cogs",
-    "platero-l1c-cogs",
-]
 
-class STACItem:
-    """Class to represent a STAC item and its properties"""
-
-    def __init__(self, stac_item_path: str) -> None:
-        self.file_path = stac_item_path
-        self.file_name = os.path.basename(stac_item_path)
-        self.stac_json = retrieve_stac_item(stac_item_path)
-        self.item_id = get_key_from_stac(self.stac_json, "id")
-        self.collection_id = get_key_from_stac(self.stac_json, "collection")
-        self.processing_level = get_key_from_stac(self.stac_json, "processing:level")
-
-
-def prepare_stac_items_to_order(catalogue_dirs: list[str]) -> list[STACItem]:
+def prepare_stac_items_to_order(catalogue_dirs: list[str]) -> dict[str, Item]:
     """Prepare a list of STAC items to order"""
     stac_item_paths = []
     for catalogue_dir in catalogue_dirs:
@@ -48,16 +30,16 @@ def prepare_stac_items_to_order(catalogue_dirs: list[str]) -> list[STACItem]:
         raise ValueError("No STAC items found in the given directories.")
     logging.info(f"STAC item paths: {stac_item_paths}")
 
-    stac_items = []
+    new_items = {}
 
     for stac_item_path in stac_item_paths:
-        stac_item_to_add = STACItem(stac_item_path)
-        stac_items.append(stac_item_to_add)
+        item = Item.from_file(stac_item_path)
+        new_items[os.path.basename(stac_item_path)] = item
 
-    return stac_items
+    return new_items
 
 
-def create_order_request(collection_id: str, item_id: str, level: str, organisation_id: str, contract_id: str) -> dict:
+def create_order_request(collection_id: str, item_id: str, level: str, organisation_id: int, contract_id: int) -> dict:
     url = "https://app.open-cosmos.com/api/data/v0/order/orders"
 
     order = {
@@ -93,29 +75,26 @@ def main(
     catalogue_dirs: list[str],
 ) -> None:
     logging.info(f"Preparing Open Cosmos data for {workspace} for the following: {catalogue_dirs}")
-    stac_items: list[STACItem] = prepare_stac_items_to_order(catalogue_dirs)
+    new_stac_items: dict[str, Item] = prepare_stac_items_to_order(catalogue_dirs)
     contract_info = get_contract_info()
 
-    for stac_item in stac_items:
+    for file_name, stac_item in new_stac_items.items():
         collection_id = stac_item.collection_id
-        if collection_id not in products:
-            raise NotImplementedError(
-                f"Collection {collection_id} is not valid. Currently implemented collections are: "
-                f"{', '.join(products)}"
-            )
+        if collection_id is None:
+            raise ValueError(f"Collection ID is None for item {stac_item.id}")
 
-        order_name = f"{stac_item.item_id}-{workspace}"
+        order_name = f"{stac_item.id}-{workspace}"
 
         delivery_folder = Path("opencosmos/commercial-data/orders")
 
-        try:
-            # Submit an order for the given STAC item
-            logging.info(f"Ordering stac item {stac_item.item_id} in {collection_id}")
+        # Submit an order for the given STAC item
+        logging.info(f"Ordering stac item {stac_item.id} in {collection_id}")
 
+        try:
             order = create_order_request(
                 collection_id,
-                stac_item.item_id,
-                stac_item.processing_level,
+                stac_item.id,
+                stac_item.properties["processing:level"],
                 contract_info.organisation_id,
                 contract_info.contract_id
             )
@@ -124,14 +103,17 @@ def main(
             if order_id is None:
                 raise ValueError(f"No order ID found for order {order_name}")
 
+            if order["data"]["status"] != "PAID":
+                raise ValueError(f"Order {order_name} is not paid")
+
             logging.info(f"Found order ID {order_id}")
 
         except Exception as e:
             reason = f"Failed to submit order: {e}"
             logging.error(reason, exc_info=True)
             update_stac_item_failure(
-                stac_item.stac_json,
-                stac_item.file_name,
+                stac_item,
+                file_name,
                 stac_item.collection_id,
                 reason,
                 workspace,
@@ -142,9 +124,9 @@ def main(
 
         # Update the STAC record after submitting the order
         update_stac_item_ordered(
-            stac_item.stac_json,
+            stac_item,
             stac_item.collection_id,
-            stac_item.item_id,
+            stac_item.id,
             order_id,
             workspace_bucket,
             pulsar_url,
@@ -152,20 +134,13 @@ def main(
         )
 
         try:
-            # Wait for data from Open Cosmos to arrive, then move it to the workspace
-            poll_s3_for_data(
-                source_bucket=commercial_data_bucket,
-                order_id=order_id,
-                folder=delivery_folder,
-            )
-
-            download_and_store_locally(commercial_data_bucket, delivery_folder / order_id, Path(order_id))
+            download_and_store_locally(stac_item, delivery_folder / order_id, Path(order_id))
         except Exception as e:
             reason = f"Failed to retrieve data: {e}"
             logging.error(reason, exc_info=True)
             update_stac_item_failure(
-                stac_item.stac_json,
-                stac_item.file_name,
+                stac_item,
+                file_name,
                 stac_item.collection_id,
                 reason,
                 workspace,
@@ -174,10 +149,10 @@ def main(
             )
             return
         update_stac_item_success(
-            stac_item.stac_json,
-            stac_item.file_name,
+            stac_item,
+            file_name,
             stac_item.collection_id,
-            order_name,
+            order_id,
             order_id,
             workspace,
             workspace_bucket,

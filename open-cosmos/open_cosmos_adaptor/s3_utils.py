@@ -1,83 +1,38 @@
-import json
 import logging
 import os
-import time
-import zipfile
 from pathlib import Path
 
-import boto3
+import requests
+from pystac import Item
 
-s3_client = boto3.client("s3")
-
-
-class PollingTimeoutError(Exception):
-    """Custom exception for polling timeout"""
-
-    pass
+from open_cosmos_adaptor.auth_utils import get_access_token
 
 
-def poll_s3_for_data(
-    source_bucket: str,
-    order_id: str,
-    folder: Path,
-    polling_interval: int = 60,
-    timeout: int = 86400,
-) -> dict:
-    """Poll the planet S3 bucket for item_id and download the data"""
-    start_time = time.time()
-    end_time = start_time + timeout
-
-    while True:
-        # Check if the folder containing the order exists in the source bucket
-        logging.info(f"Checking for {folder} folder in bucket {source_bucket}...")
-        response = s3_client.list_objects_v2(Bucket=source_bucket, Prefix=folder)
-        for obj in response.get("Contents", []):
-            if obj["Key"].endswith(f"/{order_id}/manifest.json"):  # manifest.json is the final file to be delivered
-                logging.info(f"Data available: file '{obj['Key']}' found in bucket '{source_bucket}'.")
-                return obj
-
-        # Check for timeout
-        if time.time() > end_time:
-            raise PollingTimeoutError(
-                f"Timeout reached while polling for {order_id} in bucket {source_bucket} after {timeout} seconds."
-            )
-
-        # Wait for the specified interval before checking again
-        time.sleep(polling_interval)
-
-
-def download_and_store_locally(source_bucket: str, parent_folder: Path, destination_folder: Path) -> None:
-    """Download and store order files from an S3 bucket to a local folder"""
+def download_and_store_locally(stac_item: Item, parent_folder: Path, destination_folder: Path) -> None:
+    """Download and store order files to a local folder"""
     # Create the destination folder if it doesn't exist
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
 
-    response = s3_client.list_objects_v2(Bucket=source_bucket, Prefix=parent_folder)
+    headers = {
+        "Authorization": f"Bearer {get_access_token()}"
+    }
 
-    for obj in response.get("Contents", []):
-        if not obj["Key"].endswith("/"):
-            logging.info(f"File '{obj['Key']}' found in bucket '{source_bucket}'.")
-            destination_file_path = destination_folder / Path(obj["Key"]).name
-            s3_client.download_file(source_bucket, obj["Key"], destination_file_path)
-            logging.info(f"Downloaded '{obj['Key']}' from bucket '{source_bucket}' to '{destination_file_path}'.")
+    for asset in stac_item.assets.values():
+        break
 
-            if obj["Key"].endswith(".zip"):
-                # Planet orders may arrive as a .zip file
-                logging.info("Zip file found. Unzipping...")
+        filename = os.path.basename(asset.href)
+        destination_path = destination_folder / filename
 
-                # Extract the contents of the .zip file
-                with zipfile.ZipFile(destination_file_path) as z:
-                    z.extractall(path=destination_folder)
-                    logging.info(f"Extracted '{obj['Key']}' to '{destination_folder}'.")
-                os.remove(destination_file_path)
-                logging.info(f"Deleted archive '{destination_file_path}'.")
+        logging.info(f"Downloading asset from {asset.href} to {destination_path}")
 
+        response = requests.get(asset.href, stream=True, headers=headers)
+        response.raise_for_status()
 
-def retrieve_stac_item(file_path: str) -> dict:
-    """Retrieve a STAC item from a local JSON file"""
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"The file {file_path} does not exist.")
+        with open(destination_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
 
-    with open(file_path, encoding="utf-8") as f:
-        stac_item = json.load(f)
-    return stac_item
+        asset.href = str(destination_path)
+        logging.info(f"Successfully downloaded {filename}")

@@ -1,15 +1,13 @@
-import glob
 import json
 import logging
-import mimetypes
 import os
 import re
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
 
 import boto3
 import pulsar
+from pystac import Item, Link
 
 Coordinate = list[float] | tuple[float, float]
 
@@ -66,7 +64,7 @@ def get_asset_details(file_path: str) -> tuple[str, str]:
 
 
 def write_stac_item_and_catalog(
-    stac_item: dict,
+    stac_item: Item,
     stac_item_filename: str,
     collection_id: str,
     workspace: str,
@@ -74,14 +72,14 @@ def write_stac_item_and_catalog(
 ) -> None:
     """Creates local catalog containing final STAC item to be used as a record for the order"""
     # Rewrite STAC links to point to local files only
-    stac_item["links"] = [
-        {"rel": "self", "href": stac_item_filename, "type": "application/json"},
-        {"rel": "parent", "href": "catalog.json", "type": "application/json"},
+    stac_item.links = [
+        Link(rel="self", target=stac_item_filename, media_type="application/json"),
+        Link(rel="parent", target="catalog.json", media_type="application/json"),
     ]
 
     # Write the STAC item to a file
     with open(stac_item_filename, "w") as f:
-        json.dump(stac_item, f, indent=2)
+        json.dump(stac_item.to_dict(), f, indent=2)
     logging.info(f"Created STAC item '{stac_item_filename}' locally.")
     logging.info(f"STAC item: {stac_item}")
 
@@ -162,36 +160,19 @@ def write_stac_item_and_catalog(
     logging.info(f"STAC collection: {stac_collection}")
 
 
-def update_stac_order_status(stac_item: dict, order_id: str | None, order_status: str) -> None:
+def update_stac_order_status(stac_item: Item, order_id: str | None, order_status: str) -> None:
     """Update the STAC item with the order status using the STAC Order extension"""
-    # Update or add fields relating to the order
-    if "properties" not in stac_item:
-        stac_item["properties"] = {}
 
     if order_id is not None:
-        stac_item["properties"]["order:id"] = order_id
-    stac_item["properties"]["order:status"] = order_status
+        stac_item.properties["order:id"] = order_id
+
+    stac_item.properties["order:status"] = order_status
 
     # Update or add the STAC extension if not already present
     order_extension_url = "https://stac-extensions.github.io/order/v1.1.0/schema.json"
-    if "stac_extensions" not in stac_item:
-        stac_item["stac_extensions"] = []
 
-    if order_extension_url not in stac_item["stac_extensions"]:
-        stac_item["stac_extensions"].append(order_extension_url)
-
-
-def get_key_from_stac(stac_item: dict, key: str) -> Any:
-    """Extract a nested key from a STAC item. Key given as a dot-separated string."""
-    parts = key.split(":")
-    value = stac_item
-    for part in parts:
-        value = value.get(part)
-        if value is None:
-            logging.info(f"{part} not found in STAC item.")
-            return None
-    logging.info(f"Retrieved {key} from STAC item: {value}")
-    return value
+    if order_extension_url not in stac_item.stac_extensions:
+        stac_item.stac_extensions.append(order_extension_url)
 
 
 def get_item_hrefs_from_catalogue(catalogue_dir: str) -> list:
@@ -236,7 +217,7 @@ def verify_coordinates(coordinates: list[list[Coordinate]]) -> bool:
 
 
 def update_stac_item_success(
-    stac_item: dict,
+    stac_item: Item,
     file_name: str,
     collection_id: str,
     order_name: str,
@@ -246,50 +227,24 @@ def update_stac_item_success(
 ) -> None:
     """Update the STAC item with the assets and success order status"""
     # Add all files in the directory as assets to the STAC item
-    name_counter = {}
-    for root, dirs, files in os.walk(directory):
-        dirs.sort()
-        for asset in sorted(files):
-            asset_path = os.path.join(root, asset)
-            asset_name, description = get_asset_details(asset_path)
+    for asset in stac_item.assets.values():
+        filename = os.path.basename(asset.href)
+        asset.href = f"{directory}/{filename}"
 
-            # Cannot have duplicate asset names
-            if asset_name in name_counter:
-                # Append an incrementing integer
-                name_counter[asset_name] += 1
-                asset_name = f"{asset_name}_{name_counter[asset_name]}"
-            else:
-                name_counter[asset_name] = 0
-
-            # Determine the MIME type of the file
-            mime_type, _ = mimetypes.guess_type(asset_path)
-            if mime_type is None:
-                mime_type = "application/octet-stream"  # Default MIME type
-
-            # Add asset link to the file
-            stac_item["assets"][asset_name] = {
-                "href": asset_path,
-                "type": mime_type,
-            }
-            if description:
-                stac_item["assets"][asset_name]["title"] = description
     # Mark the order as succeeded and upload the updated STAC item
     update_stac_order_status(stac_item, order_name, OrderStatus.SUCCEEDED.value)
 
     # Update the 'updated' and 'published' fields to the current time
     current_time = datetime.now(UTC).isoformat()
-    stac_item["properties"]["updated"] = current_time
-    stac_item["properties"]["published"] = current_time
+    stac_item.properties["updated"] = current_time
+    stac_item.properties["published"] = current_time
 
     # Create local record of the order, to be used as the workflow output
     write_stac_item_and_catalog(stac_item, file_name, collection_id, workspace, workspaces_bucket)
 
-    # Adding this for debugging purposes later on, just in case
-    logging.info(f"Files in current working directory: {os.getcwd()}")
-    logging.info(list(glob.iglob("./**/*", recursive=True)))
 
 def update_stac_item_failure(
-    stac_item: dict,
+    stac_item: Item,
     file_name: str,
     collection_id: str,
     reason: str,
@@ -302,17 +257,17 @@ def update_stac_item_failure(
     update_stac_order_status(stac_item, order_id, OrderStatus.FAILED.value)
 
     # Mark the reason for the failure in the local STAC item
-    stac_item["properties"]["order_failure_reason"] = reason
+    stac_item.properties["order_failure_reason"] = reason
 
     # Update the 'updated' field to the current time
-    stac_item["properties"]["updated"] = datetime.now(UTC).isoformat()
+    stac_item.properties["updated"] = datetime.now(UTC).isoformat()
 
     # Create local record of attempted order, to be used as the workflow output
     write_stac_item_and_catalog(stac_item, file_name, collection_id, workspace, workspace_bucket)
 
 
 def update_stac_item_ordered(
-    stac_item: dict,
+    stac_item: Item,
     collection_id: str,
     file_name: str,
     order_id: str,
@@ -327,8 +282,8 @@ def update_stac_item_ordered(
 
     # Update the 'updated' field to the current time
     current_time = datetime.now(UTC).isoformat()
-    stac_item["properties"]["updated"] = current_time
-    stac_item["properties"]["order:date"] = current_time
+    stac_item.properties["updated"] = current_time
+    stac_item.properties["order:date"] = current_time
 
     # Ingest the updated STAC item to the catalog
     try:
@@ -338,7 +293,7 @@ def update_stac_item_ordered(
 
 
 def ingest_stac_item(
-    stac_item: dict,
+    stac_item: Item,
     s3_bucket: str,
     pulsar_url: str,
     workspace: str,
@@ -350,15 +305,15 @@ def ingest_stac_item(
     parent_catalog_name = "commercial-data"
 
     item_key = f"{workspace}/{parent_catalog_name}/opencosmos/{collection_id}/{file_name}"
-    s3_client.put_object(Body=json.dumps(stac_item), Bucket=s3_bucket, Key=item_key)
+    s3_client.put_object(Body=json.dumps(stac_item.to_dict()), Bucket=s3_bucket, Key=item_key)
 
     logging.info(f"Uploaded STAC item to S3 bucket '{s3_bucket}' with key '{item_key}'.")
 
     transformed_item_key = (
         f"transformed/catalogs/user/catalogs/{workspace}/catalogs/{parent_catalog_name}/catalogs/"
-        f"airbus/collections/{collection_id}/items/{file_name}"
+        f"open-cosmos/collections/{collection_id}/items/{file_name}"
     )
-    s3_client.put_object(Body=json.dumps(stac_item), Bucket=s3_bucket, Key=transformed_item_key)
+    s3_client.put_object(Body=json.dumps(stac_item.to_dict()), Bucket=s3_bucket, Key=transformed_item_key)
 
     logging.info(f"Uploaded STAC item to S3 bucket '{s3_bucket}' with key '{transformed_item_key}'.")
 

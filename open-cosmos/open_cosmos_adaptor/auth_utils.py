@@ -5,13 +5,14 @@ import requests
 
 CLIENT_ID = os.getenv("CLIENT_ID", "")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET", "")
+ORGANIZATION_ID = int(os.getenv("ORGANIZATION_ID", ""))
 
 access_token: str | None = None
 
 @dataclass
 class ContractInfo:
-    contract_id: str
-    organisation_id: str
+    contract_id: int
+    organisation_id: int
 
 
 def get_access_token() -> str:
@@ -47,20 +48,19 @@ def get_access_token() -> str:
 
 
 def get_contract_info() -> ContractInfo:
-    organisation_id = "434"
     headers = {"Authorization": f"Bearer {get_access_token()}"}
-    r = requests.get(f"https://app.open-cosmos.com/api/data/v1/dpap/organisations/{organisation_id}/policies", headers=headers)
+    r = requests.get(f"https://app.open-cosmos.com/api/data/v1/dpap/organisations/{ORGANIZATION_ID}/policies", headers=headers)
     r.raise_for_status()
     policies = r.json()["data"]
 
     for policy in policies:
         if policy["default_contract"]:
-            contract_id = str(policy["contract_id"])
-            return ContractInfo(contract_id=contract_id, organisation_id=organisation_id)
+            contract_id = policy["contract_id"]
+            return ContractInfo(contract_id=contract_id, organisation_id=ORGANIZATION_ID)
 
     # If we don't have a default contract, use the first one.
-    contract_id = str(policies[0]["contract_id"])
-    return ContractInfo(contract_id=contract_id, organisation_id=organisation_id)
+    contract_id = policies[0]["contract_id"]
+    return ContractInfo(contract_id=contract_id, organisation_id=ORGANIZATION_ID)
 
 
 if __name__ == "__main__":
