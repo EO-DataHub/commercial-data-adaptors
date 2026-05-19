@@ -19,6 +19,8 @@ def get_access_token() -> str:
     """
     Obtains an access token using the client secret flow. For production we'll need to get some
     secrets from AWS and obtain a refresh token first.
+    This is a temporary solution until we have a proper authentication flow using "Option 2: Authorization Code" found
+    here: https://app.open-cosmos.com/help/developer-center/authentication
     """
     global access_token
 
@@ -48,6 +50,11 @@ def get_access_token() -> str:
 
 
 def get_contract_info() -> ContractInfo:
+    """
+    Get the contract ID and organisation ID for the default contract.
+    There's currently no way to get the organisation ID from the API, so it will be stored in the k8s secrets.
+    """
+
     headers = {"Authorization": f"Bearer {get_access_token()}"}
     r = requests.get(f"https://app.open-cosmos.com/api/data/v1/dpap/organisations/{ORGANIZATION_ID}/policies", headers=headers)
     r.raise_for_status()
@@ -61,7 +68,3 @@ def get_contract_info() -> ContractInfo:
     # If we don't have a default contract, use the first one.
     contract_id = policies[0]["contract_id"]
     return ContractInfo(contract_id=contract_id, organisation_id=ORGANIZATION_ID)
-
-
-if __name__ == "__main__":
-    print(get_contract_info())

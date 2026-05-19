@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 
 from open_cosmos_adaptor.auth_utils import get_access_token, get_contract_info
-from s3_utils import download_and_store_locally
+from s3_utils import download_and_store_locally, upload_to_s3
 from stac_utils import get_item_hrefs_from_catalogue, update_stac_item_failure, \
     update_stac_item_success, update_stac_item_ordered
 
@@ -20,7 +20,9 @@ logging.basicConfig(
 
 
 def prepare_stac_items_to_order(catalogue_dirs: list[str]) -> dict[str, Item]:
-    """Prepare a list of STAC items to order"""
+    """Loads any STAC catalogues in `catalogue_dirs` and returns a
+    dictionary of STAC items present in those catalogues."""
+
     stac_item_paths = []
     for catalogue_dir in catalogue_dirs:
         if not os.path.exists(catalogue_dir):
@@ -39,7 +41,13 @@ def prepare_stac_items_to_order(catalogue_dirs: list[str]) -> dict[str, Item]:
     return new_items
 
 
-def create_order_request(collection_id: str, item_id: str, level: str, organisation_id: int, contract_id: int) -> dict:
+def create_order_request(collection_id: str, item_id: str, processing_level: str, organisation_id: int, contract_id: int) -> dict:
+    """Builds an order payload and submits it to the Open Cosmos API.
+    See: https://app.open-cosmos.com/help/developer-center/datacosmos/api/ordering/purchasing
+
+    :returns: The response from the API.
+    """
+
     url = "https://app.open-cosmos.com/api/data/v0/order/orders"
 
     order = {
@@ -49,7 +57,7 @@ def create_order_request(collection_id: str, item_id: str, level: str, organisat
                 {
                     "collection": collection_id,
                     "item": item_id,
-                    "level": level
+                    "level": processing_level
                 }
             ]
         },
@@ -148,6 +156,23 @@ def main(
                 order_id,
             )
             return
+
+        try:
+            upload_to_s3(stac_item, Path(order_id), workspace_bucket, "")
+        except Exception as e:
+            reason = f"Failed to upload data: {e}"
+            logging.error(reason, exc_info=True)
+            update_stac_item_failure(
+                stac_item,
+                file_name,
+                stac_item.collection_id,
+                reason,
+                workspace,
+                workspace_bucket,
+                order_id,
+            )
+            return
+
         update_stac_item_success(
             stac_item,
             file_name,

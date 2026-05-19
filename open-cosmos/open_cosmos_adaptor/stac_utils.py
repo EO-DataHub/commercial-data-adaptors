@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import re
 from datetime import UTC, datetime
 from enum import Enum
 
@@ -11,6 +10,7 @@ from pystac import Item, Link
 
 Coordinate = list[float] | tuple[float, float]
 
+# As defined in the STAC order extension. See https://github.com/stac-extensions/order#orderstatus
 class OrderStatus(Enum):
     ORDERABLE = "orderable"
     ORDERED = "ordered"
@@ -20,49 +20,6 @@ class OrderStatus(Enum):
     FAILED = "failed"
     CANCELED = "canceled"
 
-
-common_regex_patterns = [
-    (r"\/ancillary\.json$", "Ancillary JSON data", "Open Cosmos standard ancillary data containing payload and platform information during capture."),
-    (r"\/metadata\.json$", "Metadata JSON", "Metadata extracted from the payload session data."),
-    (r"\/thumb.+\.png$", "Thumbnail", "Low resolution thumbnail for display purposes."),
-    (r"\/rpc\.txt$", "RPC file", "File that contains the Rational Polynomial Coefficients (RPC) model for georeferencing the image."),
-    (r"\/TCI_COG\.tiff$", "True colour image from RGB eo:bands.", "A true colour image generated from unaligned RGB bands."),
-    (r"\/PAN_COG\.tiff$", "Panchromatic band", "Panchromatic band."),
-    (r"\/B_COG\.tiff$", "Blue band", "High resolution COG containing blue frequency band with absolute, geometric corrections and orthorectified."),
-    (r"\/G_COG\.tiff$", "Green band", "High resolution COG containing green frequency band with absolute, geometric corrections and orthorectified."),
-    (r"\/R_COG\.tiff$", "Red band", "High resolution COG containing red frequency band with absolute, geometric corrections and orthorectified."),
-    (r"\/NIR_COG\.tiff$", "Near infrared band", "High resolution COG containing near infrared frequency band with absolute, geometric corrections and orthorectified."),
-]
-
-multiband_regex_patterns = [
-    (r"\/HS([0-9]{,2})_COG\.tiff$", "HS$", "Hyperspectral Band $."),
-    (r"\/RE([123])_COG\.tiff$", "Red edge $ band", "High resolution COG containing red edge $ frequency band with absolute, geometric corrections and orthorectified."),
-]
-
-
-def get_asset_details(file_path: str) -> tuple[str, str]:
-    """
-    Returns a tuple (name, description) if a match is found, otherwise (file_base_name, "").
-    """
-    # Test the file path against each regex
-    for pattern, name, description in common_regex_patterns:
-        if re.search(pattern, file_path.lower()):
-            return name, description
-
-    # If the file is a myperspectral or rededge band, extract the band number and use it as the asset name and description.
-    # This saves having 30+ regex patterns to match.
-    for pattern, name, description in multiband_regex_patterns:
-        r = re.search(pattern, file_path.lower())
-        if r is not None:
-            band_number = r.group(1)
-            band_name = re.sub(r"\$", band_number, name)
-            band_description = re.sub(r"\$", band_number, description)
-            return band_name, band_description
-
-    # If no match is found, return file name and empty description
-    return os.path.basename(file_path), ""
-
-
 def write_stac_item_and_catalog(
     stac_item: Item,
     stac_item_filename: str,
@@ -71,13 +28,14 @@ def write_stac_item_and_catalog(
     workspaces_bucket: str,
 ) -> None:
     """Creates local catalog containing final STAC item to be used as a record for the order"""
+
     # Rewrite STAC links to point to local files only
     stac_item.links = [
         Link(rel="self", target=stac_item_filename, media_type="application/json"),
         Link(rel="parent", target="catalog.json", media_type="application/json"),
     ]
 
-    # Write the STAC item to a file
+    # Write the STAC item to a file.
     with open(stac_item_filename, "w") as f:
         json.dump(stac_item.to_dict(), f, indent=2)
     logging.info(f"Created STAC item '{stac_item_filename}' locally.")
@@ -107,13 +65,13 @@ def write_stac_item_and_catalog(
         {"rel": "child", "href": "collection.json", "type": "application/json"},
     ]
 
-    # Write the STAC catalog to a file
     with open("catalog.json", "w") as f:
         json.dump(stac_catalog, f, indent=2)
 
     logging.info("Created STAC catalog catalog.json locally.")
     logging.info(f"STAC catalog: {stac_catalog}")
 
+    # Create the STAC collection.
     try:
         # obtain the existing collection from s3 if possible
         s3_client = boto3.client("s3")
@@ -300,7 +258,7 @@ def ingest_stac_item(
     collection_id: str,
     file_name: str,
 ) -> None:
-    """Ingest the STAC item to the S3 bucket and send a Pulsar message"""
+    """Copy the STAC item to the workspace's S3 bucket and send a Pulsar message to begin the purchase workflow."""
     s3_client = boto3.client("s3")
     parent_catalog_name = "commercial-data"
 
