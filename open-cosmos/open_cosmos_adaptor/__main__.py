@@ -93,7 +93,7 @@ def main(
 
         order_name = f"{stac_item.id}-{workspace}"
 
-        delivery_folder = Path("opencosmos/commercial-data/orders")
+        delivery_folder = Path("open-cosmos/commercial-data/orders")
 
         # Submit an order for the given STAC item
         logging.info(f"Ordering stac item {stac_item.id} in {collection_id}")
