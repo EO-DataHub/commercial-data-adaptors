@@ -9,6 +9,7 @@ ORGANIZATION_ID = int(os.getenv("ORGANIZATION_ID", ""))
 
 access_token: str | None = None
 
+
 @dataclass
 class ContractInfo:
     contract_id: int
@@ -28,10 +29,7 @@ def get_access_token() -> str:
         return access_token
 
     url = "https://login.open-cosmos.com/oauth/token"
-    data = {
-        "grant_type": "client_credentials",
-        "audience": "https://beeapp.open-cosmos.com"
-    }
+    data = {"grant_type": "client_credentials", "audience": "https://beeapp.open-cosmos.com"}
 
     response = requests.post(url, auth=(CLIENT_ID, CLIENT_SECRET), data=data)
     response.raise_for_status()
@@ -56,7 +54,9 @@ def get_contract_info() -> ContractInfo:
     """
 
     headers = {"Authorization": f"Bearer {get_access_token()}"}
-    r = requests.get(f"https://app.open-cosmos.com/api/data/v1/dpap/organisations/{ORGANIZATION_ID}/policies", headers=headers)
+    r = requests.get(
+        f"https://app.open-cosmos.com/api/data/v1/dpap/organisations/{ORGANIZATION_ID}/policies", headers=headers
+    )
     r.raise_for_status()
     policies = r.json()["data"]
 

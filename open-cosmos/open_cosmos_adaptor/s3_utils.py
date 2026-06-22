@@ -15,9 +15,7 @@ def download_and_store_locally(stac_item: Item, parent_folder: Path, destination
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
 
-    headers = {
-        "Authorization": f"Bearer {get_access_token()}"
-    }
+    headers = {"Authorization": f"Bearer {get_access_token()}"}
 
     for asset in stac_item.assets.values():
         filename = os.path.basename(asset.href)
@@ -28,7 +26,7 @@ def download_and_store_locally(stac_item: Item, parent_folder: Path, destination
         response = requests.get(asset.href, stream=True, headers=headers)
         response.raise_for_status()
 
-        with open(destination_path, 'wb') as f:
+        with open(destination_path, "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)

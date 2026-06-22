@@ -10,6 +10,7 @@ from pystac import Item, Link
 
 Coordinate = list[float] | tuple[float, float]
 
+
 # As defined in the STAC order extension. See https://github.com/stac-extensions/order#orderstatus
 class OrderStatus(Enum):
     ORDERABLE = "orderable"
@@ -19,6 +20,7 @@ class OrderStatus(Enum):
     SUCCEEDED = "succeeded"
     FAILED = "failed"
     CANCELED = "canceled"
+
 
 def write_stac_item_and_catalog(
     stac_item: Item,
