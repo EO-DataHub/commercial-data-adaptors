@@ -4,13 +4,16 @@ import os
 from pathlib import Path
 
 import requests
+from pystac import Item
+from s3_utils import download_and_store_locally, upload_to_s3
+from stac_utils import (
+    get_item_hrefs_from_catalogue,
+    update_stac_item_failure,
+    update_stac_item_ordered,
+    update_stac_item_success,
+)
 
 from open_cosmos_adaptor.auth_utils import get_access_token, get_contract_info
-from s3_utils import download_and_store_locally, upload_to_s3
-from stac_utils import get_item_hrefs_from_catalogue, update_stac_item_failure, \
-    update_stac_item_success, update_stac_item_ordered
-
-from pystac import Item
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,7 +44,9 @@ def prepare_stac_items_to_order(catalogue_dirs: list[str]) -> dict[str, Item]:
     return new_items
 
 
-def create_order_request(collection_id: str, item_id: str, processing_level: str, organisation_id: int, contract_id: int) -> dict:
+def create_order_request(
+    collection_id: str, item_id: str, processing_level: str, organisation_id: int, contract_id: int
+) -> dict:
     """Builds an order payload and submits it to the Open Cosmos API.
     See: https://app.open-cosmos.com/help/developer-center/datacosmos/api/ordering/purchasing
 
@@ -52,22 +57,12 @@ def create_order_request(collection_id: str, item_id: str, processing_level: str
 
     order = {
         "type": "IMAGE",
-        "data": {
-            "order_line_items": [
-                {
-                    "collection": collection_id,
-                    "item": item_id,
-                    "level": processing_level
-                }
-            ]
-        },
+        "data": {"order_line_items": [{"collection": collection_id, "item": item_id, "level": processing_level}]},
         "organisation": organisation_id,
-        "contract_id": contract_id
+        "contract_id": contract_id,
     }
 
-    headers = {
-        "Authorization": f"Bearer {get_access_token()}"
-    }
+    headers = {"Authorization": f"Bearer {get_access_token()}"}
 
     r = requests.post(url, json=order, headers=headers)
     r.raise_for_status()
@@ -93,7 +88,7 @@ def main(
 
         order_name = f"{stac_item.id}-{workspace}"
 
-        delivery_folder = Path("opencosmos/commercial-data/orders")
+        delivery_folder = Path("open-cosmos/commercial-data/orders")
 
         # Submit an order for the given STAC item
         logging.info(f"Ordering stac item {stac_item.id} in {collection_id}")
@@ -104,7 +99,7 @@ def main(
                 stac_item.id,
                 stac_item.properties["processing:level"],
                 contract_info.organisation_id,
-                contract_info.contract_id
+                contract_info.contract_id,
             )
 
             order_id = order["data"].get("id")

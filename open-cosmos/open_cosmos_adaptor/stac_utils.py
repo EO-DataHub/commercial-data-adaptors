@@ -10,6 +10,7 @@ from pystac import Item, Link
 
 Coordinate = list[float] | tuple[float, float]
 
+
 # As defined in the STAC order extension. See https://github.com/stac-extensions/order#orderstatus
 class OrderStatus(Enum):
     ORDERABLE = "orderable"
@@ -19,6 +20,7 @@ class OrderStatus(Enum):
     SUCCEEDED = "succeeded"
     FAILED = "failed"
     CANCELED = "canceled"
+
 
 def write_stac_item_and_catalog(
     stac_item: Item,
@@ -45,7 +47,7 @@ def write_stac_item_and_catalog(
     try:
         # obtain the existing catalog from s3 if possible
         s3_client = boto3.client("s3")
-        key = f"{workspace}/commercial-data/opencosmos.json"
+        key = f"{workspace}/commercial-data/open-cosmos.json"
         logging.info(f"Retrieving existing catalog from s3: {key}, {workspaces_bucket}")
         response = s3_client.get_object(Bucket=workspaces_bucket, Key=key)
         stac_catalog = json.loads(response["Body"].read())
@@ -55,7 +57,7 @@ def write_stac_item_and_catalog(
         logging.info("Creating default collection")
         stac_catalog = {
             "stac_version": "1.0.0",
-            "id": "opencosmos",
+            "id": "open-cosmos",
             "type": "Catalog",
             "description": "Order records for Open Cosmos, including completed purchases with their associated assets, as well as records of ongoing and failed orders.",
             "links": [],
@@ -75,7 +77,7 @@ def write_stac_item_and_catalog(
     try:
         # obtain the existing collection from s3 if possible
         s3_client = boto3.client("s3")
-        key = f"{workspace}/commercial-data/opencomsos/{collection_id}.json"
+        key = f"{workspace}/commercial-data/open-cosmos/{collection_id}.json"
         logging.info(f"Retrieving existing collection from s3: {key}, {workspaces_bucket}")
         response = s3_client.get_object(Bucket=workspaces_bucket, Key=key)
         stac_collection = json.loads(response["Body"].read())
@@ -90,7 +92,7 @@ def write_stac_item_and_catalog(
             "description": f"Order records for {collection_id.capitalize().replace('_', ' ')}, including completed purchases with their associated assets, as well as records of ongoing and failed orders.",
             "license": "proprietary",
             "links": [],
-            "keywords": ["opencosmos"],
+            "keywords": ["open-cosmos"],
             "extent": {
                 "spatial": {"bbox": [[-180, -90, 180, 90]]},
                 "temporal": {
@@ -262,7 +264,7 @@ def ingest_stac_item(
     s3_client = boto3.client("s3")
     parent_catalog_name = "commercial-data"
 
-    item_key = f"{workspace}/{parent_catalog_name}/opencosmos/{collection_id}/{file_name}"
+    item_key = f"{workspace}/{parent_catalog_name}/open-cosmos/{collection_id}/{file_name}"
     s3_client.put_object(Body=json.dumps(stac_item.to_dict()), Bucket=s3_bucket, Key=item_key)
 
     logging.info(f"Uploaded STAC item to S3 bucket '{s3_bucket}' with key '{item_key}'.")
