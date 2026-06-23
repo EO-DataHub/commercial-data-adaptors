@@ -84,7 +84,7 @@ def main(
 ) -> None:
     logging.info(f"Preparing Open Cosmos data for {workspace} for the following: {catalogue_dirs}")
     new_stac_items: dict[str, Item] = prepare_stac_items_to_order(catalogue_dirs)
-    contract_info = get_contract_info()
+    contract_info = get_contract_info(workspace)
 
     for file_name, stac_item in new_stac_items.items():
         collection_id = stac_item.collection_id
