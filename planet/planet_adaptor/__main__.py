@@ -53,7 +53,7 @@ class OrderStatus(Enum):
 product_bundle_map = {
     "PSScene": {
         "Visual": {"name": "visual"},
-        "General Use": {"name": "analytic_8b_sr_udm2,analytic_sr_udm2"},
+        "General Use": {"name": "analytic_8b_udm2,analytic_udm2"},
         "Analytic": {"name": "analytic_8b_sr_udm2,analytic_sr_udm2"},
         "Basic": {
             "name": "basic_analytic_8b_udm2,basic_analytic_udm2",
