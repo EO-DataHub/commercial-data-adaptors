@@ -9,13 +9,13 @@ from pystac import Item
 from open_cosmos_adaptor.auth_utils import get_access_token
 
 
-def download_and_store_locally(stac_item: Item, parent_folder: Path, destination_folder: Path) -> None:
+def download_and_store_locally(collection_id: str, stac_item: Item, parent_folder: Path, destination_folder: Path) -> None:
     """Download and store ordered asset files to a local folder."""
 
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
 
-    headers = {"Authorization": f"Bearer {get_access_token()}"}
+    headers = {"Authorization": f"Bearer {get_access_token(collection_id)}"}
 
     for asset in stac_item.assets.values():
         filename = os.path.basename(asset.href)
@@ -43,7 +43,7 @@ def upload_to_s3(stac_item: Item, source_folder: Path, s3_bucket: str, s3_key: s
     for asset in stac_item.assets.values():
         filename = os.path.basename(asset.href)
         s3_client.upload_file(
-            str(source_folder / filename),
+            str(source_folder / str(filename)),
             s3_bucket,
             s3_key,
         )

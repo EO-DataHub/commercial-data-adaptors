@@ -62,7 +62,7 @@ def create_order_request(
         "contract_id": contract_id,
     }
 
-    headers = {"Authorization": f"Bearer {get_access_token()}"}
+    headers = {"Authorization": f"Bearer {get_access_token(collection_id)}"}
 
     r = requests.post(url, json=order, headers=headers)
     r.raise_for_status()
@@ -137,7 +137,7 @@ def main(
         )
 
         try:
-            download_and_store_locally(stac_item, delivery_folder / order_id, Path(order_id))
+            download_and_store_locally(collection_id, stac_item, delivery_folder / order_id, Path(order_id))
         except Exception as e:
             reason = f"Failed to retrieve data: {e}"
             logging.error(reason, exc_info=True)
