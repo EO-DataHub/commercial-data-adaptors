@@ -9,7 +9,9 @@ from pystac import Item
 from open_cosmos_adaptor.auth_utils import get_access_token
 
 
-def download_and_store_locally(collection_id: str, stac_item: Item, parent_folder: Path, destination_folder: Path) -> None:
+def download_and_store_locally(
+    collection_id: str, stac_item: Item, parent_folder: Path, destination_folder: Path
+) -> None:
     """Download and store ordered asset files to a local folder."""
 
     if not os.path.exists(destination_folder):
