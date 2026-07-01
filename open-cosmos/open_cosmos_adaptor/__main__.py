@@ -46,7 +46,12 @@ def prepare_stac_items_to_order(catalogue_dirs: list[str]) -> dict[str, Item]:
 
 
 def create_order_request(
-    collection_id: str, item_id: str, processing_level: str, organisation_id: int, contract_id: int
+    collection_id: str,
+    item_id: str,
+    processing_level: str,
+    organisation_id: int,
+    contract_id: int,
+    workspace: str,
 ) -> dict:
     """Builds an order payload and submits it to the Open Cosmos API.
     See: https://app.open-cosmos.com/help/developer-center/datacosmos/api/ordering/purchasing
@@ -63,7 +68,7 @@ def create_order_request(
         "contract_id": contract_id,
     }
 
-    headers = {"Authorization": f"Bearer {get_access_token(collection_id)}"}
+    headers = {"Authorization": f"Bearer {get_access_token(workspace)}"}
 
     r = requests.post(url, json=order, headers=headers)
     r.raise_for_status()
@@ -100,6 +105,7 @@ def main(
                 stac_item.properties["processing:level"],
                 contract_info.organisation_id,
                 contract_info.contract_id,
+                workspace,
             )
 
             order_id = order["data"].get("id")
@@ -137,7 +143,7 @@ def main(
         )
 
         try:
-            download_and_store_locally(collection_id, stac_item, delivery_folder / order_id, Path(order_id))
+            download_and_store_locally(stac_item, delivery_folder / order_id, Path(order_id), workspace)
         except Exception as e:
             reason = f"Failed to retrieve data: {e}"
             logging.error(reason, exc_info=True)
@@ -183,14 +189,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Order Open Cosmos data")
     parser.add_argument("workspace", type=str, help="Workspace name")
     parser.add_argument("workspace_bucket", type=str, help="Workspace bucket")
+    parser.add_argument("commercial_data_bucket", type=str, help="Commercial data bucket")
     parser.add_argument("pulsar_url", type=str, help="Pulsar URL")
+    parser.add_argument("--coordinates", type=str, help="Area of interest coordinates")
     parser.add_argument(
         "--catalogue_dirs",
         nargs="+",
         required=True,
         help="List of catalogue directories",
     )
-    args = parser.parse_known_args()[0]
+    args = parser.parse_args()
 
     main(
         args.workspace,
