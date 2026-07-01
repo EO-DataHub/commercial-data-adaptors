@@ -51,7 +51,7 @@ $graph:
         label: Licence used for the order
         doc: Licence used for the order - unused
         type: string
-      outputs:
+    outputs:
       - id: results
         type: Directory
         outputSource:
@@ -61,12 +61,15 @@ $graph:
         run: "#open-cosmos-adaptor"
         in:
           workspace: workspace
-          cluster_prefix: cluster_prefix
           workspace_bucket: workspace_bucket
           commercial_data_bucket: commercial_data_bucket
           pulsar_url: pulsar_url
+          product_bundle: product_bundle
           coordinates: coordinates
           stac_key: stac_key
+          end_users: end_users
+          licence: licence
+          cluster_prefix: cluster_prefix
         out:
           - results
   - class: CommandLineTool
@@ -78,7 +81,7 @@ $graph:
       EnvVarRequirement:
         envDef:
           CLUSTER_PREFIX: $(inputs.cluster_prefix)
-    baseCommand: ["python", "-m", "open_cosmos_adaptor"]
+    baseCommand: [ "python", "-m", "open_cosmos_adaptor" ]
     inputs:
       workspace:
         type: string
