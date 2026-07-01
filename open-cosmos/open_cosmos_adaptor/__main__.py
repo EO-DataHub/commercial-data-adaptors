@@ -157,7 +157,7 @@ def main(
                 stac_item,
                 Path(order_id),
                 workspace_bucket,
-                f"{workspace}/commercial-data/open-cosmos/{stac_item.collection_id}/{stac_item.id}/"
+                f"{workspace}/commercial-data/open-cosmos/{stac_item.collection_id}/{stac_item.id}/",
             )
         except Exception as e:
             reason = f"Failed to upload data: {e}"
