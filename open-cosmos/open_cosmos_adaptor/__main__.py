@@ -5,6 +5,9 @@ from pathlib import Path
 
 import requests
 from pystac import Item
+
+from open_cosmos_adaptor.auth_utils import get_access_token, get_contract_info
+
 from .s3_utils import download_and_store_locally, upload_to_s3
 from .stac_utils import (
     get_item_hrefs_from_catalogue,
@@ -12,8 +15,6 @@ from .stac_utils import (
     update_stac_item_ordered,
     update_stac_item_success,
 )
-
-from open_cosmos_adaptor.auth_utils import get_access_token, get_contract_info
 
 logging.basicConfig(
     level=logging.INFO,
