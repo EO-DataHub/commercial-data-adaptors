@@ -65,6 +65,7 @@ def create_order_request(
 
     headers = {"Authorization": f"Bearer {get_access_token(workspace)}"}
 
+    logging.debug(f"Sending order request to {url} with headers {headers} and body of {order}")
     r = requests.post(url, json=order, headers=headers)
     r.raise_for_status()
 

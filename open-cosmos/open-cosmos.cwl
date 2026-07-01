@@ -1,7 +1,7 @@
 cwlVersion: v1.0
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 0.1.8
+s:softwareVersion: 0.1.11
 schemas:
   - http://schema.org/version/9.0/schemaorg-current-http.rdf
 $graph:
@@ -54,18 +54,15 @@ $graph:
         in:
           workspace: workspace
           workspace_bucket: workspace_bucket
-          commercial_data_bucket: commercial_data_bucket
           pulsar_url: pulsar_url
-          coordinates: coordinates
           stac_key: stac_key
-          cluster_prefix: cluster_prefix
         out:
           - results
   - class: CommandLineTool
     id: open-cosmos-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/open-cosmos-adaptor:0.0.5
+        dockerPull: public.ecr.aws/eodh/open-cosmos-adaptor:0.0.8
     requirements:
       EnvVarRequirement:
         envDef:
@@ -89,14 +86,6 @@ $graph:
         inputBinding:
           prefix: --catalogue_dirs
           position: 4
-      cluster_prefix:
-        type: string
-      commercial_data_bucket:
-        type: string
-      coordinates:
-        type: string
-      product_bundle:
-        type: string
 
     outputs:
       results:
