@@ -46,7 +46,7 @@ def prepare_stac_items_to_order(catalogue_dirs: list[str]) -> dict[str, Item]:
 
 
 def create_order_request(
-        collection_id: str, item_id: str, processing_level: str, organisation_id: int, contract_id: int
+        workspace: str, collection_id: str, item_id: str, processing_level: str, organisation_id: int, contract_id: int
 ) -> dict:
     """Builds an order payload and submits it to the Open Cosmos API.
     See: https://app.open-cosmos.com/help/developer-center/datacosmos/api/ordering/purchasing
@@ -63,7 +63,7 @@ def create_order_request(
         "contract_id": contract_id,
     }
 
-    headers = {"Authorization": f"Bearer {get_access_token(collection_id)}"}
+    headers = {"Authorization": f"Bearer {get_access_token(workspace)}"}
 
     r = requests.post(url, json=order, headers=headers)
     r.raise_for_status()
@@ -93,6 +93,7 @@ def main(
 
         try:
             order = create_order_request(
+                workspace,
                 collection_id,
                 stac_item.id,
                 stac_item.properties["processing:level"],

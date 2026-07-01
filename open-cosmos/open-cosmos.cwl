@@ -89,6 +89,14 @@ $graph:
         inputBinding:
           prefix: --catalogue_dirs
           position: 4
+      cluster_prefix:
+        type: string
+      commercial_data_bucket:
+        type: string
+      coordinates:
+        type: string
+      product_bundle:
+        type: string
 
     outputs:
       results:
