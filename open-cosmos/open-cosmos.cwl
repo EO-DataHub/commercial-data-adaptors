@@ -1,7 +1,7 @@
 cwlVersion: v1.0
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 0.1.7
+s:softwareVersion: 0.1.8
 schemas:
   - http://schema.org/version/9.0/schemaorg-current-http.rdf
 $graph:
@@ -76,6 +76,8 @@ $graph:
         type: string
         inputBinding:
           position: 1
+      cluster_prefix:
+        type: string
       workspace_bucket:
         type: string
         inputBinding:
