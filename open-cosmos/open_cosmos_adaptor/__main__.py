@@ -5,15 +5,16 @@ from pathlib import Path
 
 import requests
 from pystac import Item
-from s3_utils import download_and_store_locally, upload_to_s3
-from stac_utils import (
+
+from open_cosmos_adaptor.auth_utils import get_access_token, get_contract_info
+
+from .s3_utils import download_and_store_locally, upload_to_s3
+from .stac_utils import (
     get_item_hrefs_from_catalogue,
     update_stac_item_failure,
     update_stac_item_ordered,
     update_stac_item_success,
 )
-
-from open_cosmos_adaptor.auth_utils import get_access_token, get_contract_info
 
 logging.basicConfig(
     level=logging.INFO,
@@ -73,7 +74,6 @@ def create_order_request(
 def main(
     workspace: str,
     workspace_bucket: str,
-    commercial_data_bucket: str,
     pulsar_url: str,
     catalogue_dirs: list[str],
 ) -> None:
@@ -183,7 +183,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Order Open Cosmos data")
     parser.add_argument("workspace", type=str, help="Workspace name")
     parser.add_argument("workspace_bucket", type=str, help="Workspace bucket")
-    parser.add_argument("commercial_data_bucket", type=str, help="Commercial data bucket")
     parser.add_argument("pulsar_url", type=str, help="Pulsar URL")
     parser.add_argument(
         "--catalogue_dirs",
@@ -191,12 +190,11 @@ if __name__ == "__main__":
         required=True,
         help="List of catalogue directories",
     )
-    args = parser.parse_args()
+    args = parser.parse_known_args()[0]
 
     main(
         args.workspace,
         args.workspace_bucket,
-        args.commercial_data_bucket,
         args.pulsar_url,
         args.catalogue_dirs,
     )

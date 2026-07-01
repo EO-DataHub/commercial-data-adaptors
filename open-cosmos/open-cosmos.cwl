@@ -17,7 +17,7 @@ $graph:
         type: string
       cluster_prefix:
         label: cluster_prefix
-        doc: Platform prefix
+        doc: Platform prefix - unused
         type: string
       workspace_bucket:
         label: Bucket within which workspace data is stored
@@ -25,21 +25,33 @@ $graph:
         type: string
       commercial_data_bucket:
         label: Bucket from which commercial data will be received
-        doc: Bucket from which commercial data will be received
+        doc: Bucket from which commercial data will be received - unused
         type: string
       pulsar_url:
         label: URL to inform the pulsar environment of STAC updates
         doc: URL to inform the pulsar environment of STAC updates
         type: string
+      product_bundle:
+        label: Reference to a group of settings describing parameters for an order
+        doc: Reference to a group of settings describing parameters for an order - unused
+        type: string
       coordinates:
-        label: Coordinates of any AOI
-        doc: Coordinates of any AOI
+        label: List of coordinates for the area of interest
+        doc: List of coordinates for the area of interest - unused
         type: string
       stac_key:
         label: Path to stac item in s3 describing data to order and download
-        doc: Path to stac item in s3 describing data to order and download
+        doc: Path to stac item in s3 describing data to order and download - unused
         type: Directory
-    outputs:
+      end_users:
+        label: List of end users and nationalities.
+        doc: List of end users and nationalities. - unused
+        type: string
+      licence:
+        label: Licence used for the order
+        doc: Licence used for the order - unused
+        type: string
+      outputs:
       - id: results
         type: Directory
         outputSource:
@@ -61,7 +73,7 @@ $graph:
     id: open-cosmos-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/open-cosmos-adaptor:0.1.0
+        dockerPull: public.ecr.aws/eodh/open-cosmos-adaptor:0.0.3
     requirements:
       EnvVarRequirement:
         envDef:
@@ -86,14 +98,30 @@ $graph:
         type: string
         inputBinding:
           position: 4
-      coordinates:
+      product_bundle:
         type: string
         inputBinding:
           position: 5
+      coordinates:
+        type: string
+        inputBinding:
+          prefix: --coordinates
+          position: 6
       stac_key:
         type: Directory
         inputBinding:
-          position: 6
+          prefix: --catalogue_dirs
+          position: 7
+      end_users:
+        type: string
+        inputBinding:
+          prefix: --end_users
+          position: 8
+      licence:
+        type: string
+        inputBinding:
+          prefix: --licence
+          position: 9
 
     outputs:
       results:
