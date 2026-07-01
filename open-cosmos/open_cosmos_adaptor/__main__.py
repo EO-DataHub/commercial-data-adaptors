@@ -46,7 +46,7 @@ def prepare_stac_items_to_order(catalogue_dirs: list[str]) -> dict[str, Item]:
 
 
 def create_order_request(
-    collection_id: str, item_id: str, processing_level: str, organisation_id: int, contract_id: int
+        collection_id: str, item_id: str, processing_level: str, organisation_id: int, contract_id: int
 ) -> dict:
     """Builds an order payload and submits it to the Open Cosmos API.
     See: https://app.open-cosmos.com/help/developer-center/datacosmos/api/ordering/purchasing
@@ -72,10 +72,10 @@ def create_order_request(
 
 
 def main(
-    workspace: str,
-    workspace_bucket: str,
-    pulsar_url: str,
-    catalogue_dirs: list[str],
+        workspace: str,
+        workspace_bucket: str,
+        pulsar_url: str,
+        catalogue_dirs: list[str],
 ) -> None:
     logging.info(f"Preparing Open Cosmos data for {workspace} for the following: {catalogue_dirs}")
     new_stac_items: dict[str, Item] = prepare_stac_items_to_order(catalogue_dirs)
@@ -87,8 +87,6 @@ def main(
             raise ValueError(f"Collection ID is None for item {stac_item.id}")
 
         order_name = f"{stac_item.id}-{workspace}"
-
-        delivery_folder = Path("open-cosmos/commercial-data/orders")
 
         # Submit an order for the given STAC item
         logging.info(f"Ordering stac item {stac_item.id} in {collection_id}")
@@ -137,7 +135,7 @@ def main(
         )
 
         try:
-            download_and_store_locally(collection_id, stac_item, delivery_folder / order_id, Path(order_id))
+            download_and_store_locally(workspace, stac_item, Path(order_id))
         except Exception as e:
             reason = f"Failed to retrieve data: {e}"
             logging.error(reason, exc_info=True)
@@ -153,7 +151,7 @@ def main(
             return
 
         try:
-            upload_to_s3(stac_item, Path(order_id), workspace_bucket, "")
+            upload_to_s3(stac_item, Path(order_id), workspace_bucket, f"{workspace}/commercial-data/open-cosmos/{stac_item.collection_id}/{stac_item.id}/")
         except Exception as e:
             reason = f"Failed to upload data: {e}"
             logging.error(reason, exc_info=True)

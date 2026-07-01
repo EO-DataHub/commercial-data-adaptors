@@ -1,7 +1,7 @@
 cwlVersion: v1.0
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 0.1.6
+s:softwareVersion: 0.1.7
 schemas:
   - http://schema.org/version/9.0/schemaorg-current-http.rdf
 $graph:
@@ -65,7 +65,7 @@ $graph:
     id: open-cosmos-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/open-cosmos-adaptor:0.0.3
+        dockerPull: public.ecr.aws/eodh/open-cosmos-adaptor:0.0.4
     requirements:
       EnvVarRequirement:
         envDef:
@@ -76,30 +76,19 @@ $graph:
         type: string
         inputBinding:
           position: 1
-      cluster_prefix:
-        type: string
       workspace_bucket:
         type: string
         inputBinding:
           position: 2
-      commercial_data_bucket:
-        type: string
-        inputBinding:
-          position: 3
       pulsar_url:
         type: string
         inputBinding:
-          position: 4
-      coordinates:
-        type: string
-        inputBinding:
-          prefix: --coordinates
-          position: 5
+          position: 3
       stac_key:
         type: Directory
         inputBinding:
           prefix: --catalogue_dirs
-          position: 6
+          position: 4
 
     outputs:
       results:
