@@ -1,7 +1,7 @@
 cwlVersion: v1.0
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 0.1.2
+s:softwareVersion: 0.1.6
 schemas:
   - http://schema.org/version/9.0/schemaorg-current-http.rdf
 $graph:
@@ -43,14 +43,6 @@ $graph:
         label: Path to stac item in s3 describing data to order and download
         doc: Path to stac item in s3 describing data to order and download - unused
         type: Directory
-      end_users:
-        label: List of end users and nationalities.
-        doc: List of end users and nationalities. - unused
-        type: string
-      licence:
-        label: Licence used for the order
-        doc: Licence used for the order - unused
-        type: string
     outputs:
       - id: results
         type: Directory
@@ -64,11 +56,8 @@ $graph:
           workspace_bucket: workspace_bucket
           commercial_data_bucket: commercial_data_bucket
           pulsar_url: pulsar_url
-          product_bundle: product_bundle
           coordinates: coordinates
           stac_key: stac_key
-          end_users: end_users
-          licence: licence
           cluster_prefix: cluster_prefix
         out:
           - results
@@ -101,30 +90,16 @@ $graph:
         type: string
         inputBinding:
           position: 4
-      product_bundle:
-        type: string
-        inputBinding:
-          position: 5
       coordinates:
         type: string
         inputBinding:
           prefix: --coordinates
-          position: 6
+          position: 5
       stac_key:
         type: Directory
         inputBinding:
           prefix: --catalogue_dirs
-          position: 7
-      end_users:
-        type: string
-        inputBinding:
-          prefix: --end_users
-          position: 8
-      licence:
-        type: string
-        inputBinding:
-          prefix: --licence
-          position: 9
+          position: 6
 
     outputs:
       results:
