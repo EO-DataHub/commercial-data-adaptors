@@ -1,7 +1,7 @@
 cwlVersion: v1.0
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 0.1.11
+s:softwareVersion: 0.1.12
 schemas:
   - http://schema.org/version/9.0/schemaorg-current-http.rdf
 $graph:
@@ -56,6 +56,7 @@ $graph:
           workspace_bucket: workspace_bucket
           pulsar_url: pulsar_url
           stac_key: stac_key
+          cluster_prefix: cluster_prefix
         out:
           - results
   - class: CommandLineTool
@@ -73,6 +74,8 @@ $graph:
         type: string
         inputBinding:
           position: 1
+      cluster_prefix:
+        type: string
       workspace_bucket:
         type: string
         inputBinding:
