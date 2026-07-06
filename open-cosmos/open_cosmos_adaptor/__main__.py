@@ -67,7 +67,12 @@ def create_order_request(
 
     logging.info(f"Sending order request to {url} with headers {headers} and body of {order}")
     r = requests.post(url, json=order, headers=headers)
-    r.raise_for_status()
+
+    try:
+        r.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        msg = r.json().get("errors")[0].get("message")
+        raise Exception(msg) from e
 
     return r.json()
 
