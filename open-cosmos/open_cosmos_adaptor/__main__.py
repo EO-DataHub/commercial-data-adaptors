@@ -23,6 +23,10 @@ logging.basicConfig(
 )
 
 
+def _format_errors(errors: list[dict[str, str]]) -> str:
+    return "\n".join(error["message"] for error in errors)
+
+
 def prepare_stac_items_to_order(catalogue_dirs: list[str]) -> dict[str, Item]:
     """Loads any STAC catalogues in `catalogue_dirs` and returns a
     dictionary of STAC items present in those catalogues."""
@@ -68,13 +72,12 @@ def create_order_request(
 
     headers = {"Authorization": f"Bearer {get_access_token(workspace)}"}
 
-    logging.info(f"Sending order request to {url} with headers {headers} and body of {order}")
     r = requests.post(url, json=order, headers=headers)
 
     try:
         r.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        msg = r.json().get("errors")[0].get("message")
+        msg = _format_errors(r.json().get("errors"))
         raise Exception(msg) from e
 
     return r.json()

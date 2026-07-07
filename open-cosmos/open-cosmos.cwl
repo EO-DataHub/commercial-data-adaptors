@@ -1,7 +1,7 @@
 cwlVersion: v1.0
 $namespaces:
   s: https://schema.org/
-s:softwareVersion: 0.1.13
+s:softwareVersion: 0.1.14
 schemas:
   - http://schema.org/version/9.0/schemaorg-current-http.rdf
 $graph:
@@ -63,7 +63,7 @@ $graph:
     id: open-cosmos-adaptor
     hints:
       DockerRequirement:
-        dockerPull: public.ecr.aws/eodh/open-cosmos-adaptor:0.0.9
+        dockerPull: public.ecr.aws/eodh/open-cosmos-adaptor:0.0.10
     requirements:
       EnvVarRequirement:
         envDef:
