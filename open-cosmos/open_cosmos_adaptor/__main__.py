@@ -31,9 +31,12 @@ def prepare_stac_items_to_order(catalogue_dirs: list[str]) -> dict[str, Item]:
     for catalogue_dir in catalogue_dirs:
         if not os.path.exists(catalogue_dir):
             raise FileNotFoundError(f"Catalogue directory {catalogue_dir} not found.")
+
         stac_item_paths += get_item_hrefs_from_catalogue(catalogue_dir)
+
     if not stac_item_paths:
         raise ValueError("No STAC items found in the given directories.")
+
     logging.info(f"STAC item paths: {stac_item_paths}")
 
     new_items = {}
@@ -77,6 +80,20 @@ def create_order_request(
     return r.json()
 
 
+def fetch_item_for_order(workspace: str, order: dict) -> Item:
+    """Fetches an STAC item from the Open Cosmos API."""
+
+    collection_id = order["data"]["order_line_items"][0]["collection"]
+    item_id = order["data"]["order_line_items"][0]["item"]
+
+    url = f"https://app.open-cosmos.com/api/data/v0/stac/collections/{collection_id}/items/{item_id}"
+    headers = {"Authorization": f"Bearer {get_access_token(workspace)}"}
+    r = requests.get(url, headers=headers)
+    r.raise_for_status()
+
+    return Item.from_dict(r.json())
+
+
 def main(
     workspace: str,
     workspace_bucket: str,
@@ -93,6 +110,7 @@ def main(
             raise ValueError(f"Collection ID is None for item {stac_item.id}")
 
         order_name = f"{stac_item.id}-{workspace}"
+        order_id: str | None = None
 
         # Submit an order for the given STAC item
         logging.info(f"Ordering stac item {stac_item.id} in {collection_id}")
@@ -107,7 +125,7 @@ def main(
                 contract_info.contract_id,
             )
 
-            order_id = order["data"].get("id")
+            order_id = order["data"].get("id", None)
             if order_id is None:
                 raise ValueError(f"No order ID found for order {order_name}")
 
@@ -115,30 +133,29 @@ def main(
                 raise ValueError(f"Order {order_name} is not paid")
 
             logging.info(f"Found order ID {order_id}")
-
         except Exception as e:
             reason = f"Failed to submit order: {e}"
             logging.error(reason, exc_info=True)
             update_stac_item_failure(
                 stac_item,
                 file_name,
-                stac_item.collection_id,
-                reason,
                 workspace,
                 workspace_bucket,
-                order_name,
+                order_name if order_id is None else order_id,
+                reason=reason,
             )
             return
 
         # Update the STAC record after submitting the order
+        stac_item = fetch_item_for_order(workspace, order)
+
         update_stac_item_ordered(
             stac_item,
-            stac_item.collection_id,
-            stac_item.id,
-            order_id,
-            workspace_bucket,
-            pulsar_url,
+            file_name,
             workspace,
+            workspace_bucket,
+            order_id,
+            pulsar_url=pulsar_url,
         )
 
         try:
@@ -149,11 +166,10 @@ def main(
             update_stac_item_failure(
                 stac_item,
                 file_name,
-                stac_item.collection_id,
-                reason,
                 workspace,
                 workspace_bucket,
                 order_id,
+                reason=reason,
             )
             return
 
@@ -170,22 +186,21 @@ def main(
             update_stac_item_failure(
                 stac_item,
                 file_name,
-                stac_item.collection_id,
-                reason,
                 workspace,
                 workspace_bucket,
                 order_id,
+                reason=reason,
             )
             return
 
+        order_directory = Path(order_id)
         update_stac_item_success(
             stac_item,
             file_name,
-            stac_item.collection_id,
-            order_id,
-            order_id,
             workspace,
             workspace_bucket,
+            order_id,
+            directory=order_directory,
         )
 
 
