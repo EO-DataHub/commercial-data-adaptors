@@ -3,6 +3,7 @@ import logging
 import os
 from datetime import UTC, datetime
 from enum import Enum
+from pathlib import Path
 
 import boto3
 import pulsar
@@ -179,20 +180,20 @@ def verify_coordinates(coordinates: list[list[Coordinate]]) -> bool:
 def update_stac_item_success(
     stac_item: Item,
     file_name: str,
-    collection_id: str,
-    order_name: str,
-    directory: str,
     workspace: str,
     workspaces_bucket: str,
+    order_id: str,
+    *,
+    directory: Path,
 ) -> None:
     """Update the STAC item with the assets and success order status"""
     # Add all files in the directory as assets to the STAC item
     for asset in stac_item.assets.values():
-        filename = os.path.basename(asset.href)
-        asset.href = f"{directory}/{filename}"
+        filename = str(os.path.basename(asset.href))
+        asset.href = str(directory / filename)
 
     # Mark the order as succeeded and upload the updated STAC item
-    update_stac_order_status(stac_item, order_name, OrderStatus.SUCCEEDED.value)
+    update_stac_order_status(stac_item, order_id, OrderStatus.SUCCEEDED.value)
 
     # Update the 'updated' and 'published' fields to the current time
     current_time = datetime.now(UTC).isoformat()
@@ -200,17 +201,19 @@ def update_stac_item_success(
     stac_item.properties["published"] = current_time
 
     # Create local record of the order, to be used as the workflow output
-    write_stac_item_and_catalog(stac_item, file_name, collection_id, workspace, workspaces_bucket)
+    write_stac_item_and_catalog(
+        stac_item, file_name, stac_item.collection_id or "unknown", workspace, workspaces_bucket
+    )  # pyright: ignore
 
 
 def update_stac_item_failure(
     stac_item: Item,
     file_name: str,
-    collection_id: str,
-    reason: str,
     workspace: str,
     workspace_bucket: str,
-    order_id: str | None = None,
+    order_id: str,
+    *,
+    reason: str,
 ) -> None:
     """Update the STAC item with the failure order status"""
     # Mark the order as failed in the local STAC item
@@ -223,17 +226,19 @@ def update_stac_item_failure(
     stac_item.properties["updated"] = datetime.now(UTC).isoformat()
 
     # Create local record of attempted order, to be used as the workflow output
-    write_stac_item_and_catalog(stac_item, file_name, collection_id, workspace, workspace_bucket)
+    write_stac_item_and_catalog(
+        stac_item, file_name, stac_item.collection_id or "unknown", workspace, workspace_bucket
+    )  # pyright: ignore
 
 
 def update_stac_item_ordered(
     stac_item: Item,
-    collection_id: str,
     file_name: str,
-    order_id: str,
-    s3_bucket: str,
-    pulsar_url: str,
     workspace: str,
+    workspace_bucket: str,
+    order_id: str,
+    *,
+    pulsar_url: str,
 ) -> None:
     """Update the STAC item with the ordered order status"""
     logging.info(f"Updating STAC item with order ID: {order_id} to 'ordered' status.")
@@ -247,7 +252,7 @@ def update_stac_item_ordered(
 
     # Ingest the updated STAC item to the catalog
     try:
-        ingest_stac_item(stac_item, s3_bucket, pulsar_url, workspace, collection_id, file_name)
+        ingest_stac_item(stac_item, workspace_bucket, pulsar_url, workspace, file_name)
     except Exception as e:
         logging.error(f"Failed to ingest STAC item: {e}", exc_info=True)
 
@@ -257,21 +262,20 @@ def ingest_stac_item(
     s3_bucket: str,
     pulsar_url: str,
     workspace: str,
-    collection_id: str,
     file_name: str,
 ) -> None:
-    """Copy the STAC item to the workspace's S3 bucket and send a Pulsar message to begin the purchase workflow."""
+    """Copy the STAC item to the workspace's S3 bucket and send a Pulsar message to signal completion."""
     s3_client = boto3.client("s3")
     parent_catalog_name = "commercial-data"
 
-    item_key = f"{workspace}/{parent_catalog_name}/open-cosmos/{collection_id}/{file_name}"
+    item_key = f"{workspace}/{parent_catalog_name}/open-cosmos/{stac_item.collection_id}/{file_name}"
     s3_client.put_object(Body=json.dumps(stac_item.to_dict()), Bucket=s3_bucket, Key=item_key)
 
     logging.info(f"Uploaded STAC item to S3 bucket '{s3_bucket}' with key '{item_key}'.")
 
     transformed_item_key = (
         f"transformed/catalogs/user/catalogs/{workspace}/catalogs/{parent_catalog_name}/catalogs/"
-        f"open-cosmos/collections/{collection_id}/items/{file_name}"
+        f"open-cosmos/collections/{stac_item.collection_id}/items/{file_name}"
     )
     s3_client.put_object(Body=json.dumps(stac_item.to_dict()), Bucket=s3_bucket, Key=transformed_item_key)
 
