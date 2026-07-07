@@ -150,7 +150,14 @@ def main(
             return
 
         # Update the STAC record after submitting the order
-        stac_item = fetch_item_for_order(workspace, order)
+        oc_stac_item: Item = fetch_item_for_order(workspace, order)
+        stac_item.properties.update(oc_stac_item.properties)
+        stac_item.assets.update(oc_stac_item.assets)
+        # Only add links that don't already exist.
+        for link in oc_stac_item.links:
+            if stac_item.get_links(link.rel):
+                continue
+            stac_item.add_link(link)
 
         update_stac_item_ordered(
             stac_item,

@@ -190,7 +190,7 @@ def update_stac_item_success(
     # Add all files in the directory as assets to the STAC item
     for asset in stac_item.assets.values():
         filename = str(os.path.basename(asset.href))
-        asset.href = directory / filename
+        asset.href = str(directory / filename)
 
     # Mark the order as succeeded and upload the updated STAC item
     update_stac_order_status(stac_item, order_id, OrderStatus.SUCCEEDED.value)
@@ -201,7 +201,9 @@ def update_stac_item_success(
     stac_item.properties["published"] = current_time
 
     # Create local record of the order, to be used as the workflow output
-    write_stac_item_and_catalog(stac_item, file_name, stac_item.collection_id, workspace, workspaces_bucket)
+    write_stac_item_and_catalog(
+        stac_item, file_name, stac_item.collection_id or "unknown", workspace, workspaces_bucket
+    )  # pyright: ignore
 
 
 def update_stac_item_failure(
@@ -224,7 +226,9 @@ def update_stac_item_failure(
     stac_item.properties["updated"] = datetime.now(UTC).isoformat()
 
     # Create local record of attempted order, to be used as the workflow output
-    write_stac_item_and_catalog(stac_item, file_name, stac_item.collection_id, workspace, workspace_bucket)
+    write_stac_item_and_catalog(
+        stac_item, file_name, stac_item.collection_id or "unknown", workspace, workspace_bucket
+    )  # pyright: ignore
 
 
 def update_stac_item_ordered(
