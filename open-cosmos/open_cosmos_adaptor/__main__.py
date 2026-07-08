@@ -8,7 +8,7 @@ from pystac import Item
 
 from open_cosmos_adaptor.auth_utils import get_access_token, get_contract_info
 
-from .s3_utils import download_and_store_locally, upload_to_s3
+from .s3_utils import download_and_store_locally
 from .stac_utils import (
     get_item_hrefs_from_catalogue,
     update_stac_item_failure,
@@ -169,29 +169,9 @@ def main(
         )
 
         try:
-            download_and_store_locally(workspace, stac_item, Path(order_id))
+            download_and_store_locally(stac_item, Path(order_id), workspace)
         except Exception as e:
             reason = f"Failed to retrieve data: {e}"
-            logging.error(reason, exc_info=True)
-            update_stac_item_failure(
-                stac_item,
-                file_name,
-                workspace,
-                workspace_bucket,
-                order_id,
-                reason=reason,
-            )
-            return
-
-        try:
-            upload_to_s3(
-                stac_item,
-                Path(order_id),
-                workspace_bucket,
-                f"{workspace}/commercial-data/open-cosmos/{stac_item.collection_id}/{stac_item.id}/",
-            )
-        except Exception as e:
-            reason = f"Failed to upload data: {e}"
             logging.error(reason, exc_info=True)
             update_stac_item_failure(
                 stac_item,
