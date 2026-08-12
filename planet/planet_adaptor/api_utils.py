@@ -196,6 +196,23 @@ async def submit_order(workspace: str, order_details: dict) -> Any:
 
         except Exception as e:
             message = str(e)
+
+            # Check for clip tool permission error
+            if (
+                "clip' tool" in message
+                or "permission to run the 'clip' tool" in message
+            ):
+                logging.error(
+                    "Order failed: Planet account does not have clip tool permissions. "
+                    f"Order details: {order_details.get('name', 'unknown')}"
+                )
+                raise Exception(
+                    "Order failed: Your Planet account does not have clip tool permissions. "
+                    "Without clipping, you would receive the full scene instead of your requested area, "
+                    "resulting in significantly higher quota usage."
+                    "Please contact Planet to enable clip tool access for your account."
+                ) from e
+
             if "400 Bad Request" in message or "Unable to accept order" in message:
                 search = re.compile(r"([0-9]{8}_[0-9]{6})")
                 item_id = order_details.get("name", "")
