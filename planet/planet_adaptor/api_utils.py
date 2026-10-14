@@ -200,10 +200,11 @@ async def submit_order(workspace: str, order_details: dict) -> Any:
                 search = re.compile(r"([0-9]{8}_[0-9]{6})")
                 item_id = order_details.get("name", "")
                 dates = search.findall(item_id)
-                asset_timestamp = datetime.datetime.strptime(dates[0], "%Y%m%d_%H%M%S")
-                if asset_timestamp > datetime.datetime.now() - datetime.timedelta(hours=12):
-                    raise Exception(
-                        "Order failed without using quota: Assets are not yet available for recent data. Please try again later."
-                    ) from e
+                if dates:
+                    asset_timestamp = datetime.datetime.strptime(dates[0], "%Y%m%d_%H%M%S")
+                    if asset_timestamp > datetime.datetime.now() - datetime.timedelta(hours=12):
+                        raise Exception(
+                            "Order failed without using quota: Assets are not yet available for recent data. Please try again later."
+                        ) from e
 
-            raise Exception from e
+            raise
